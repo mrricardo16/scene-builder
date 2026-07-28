@@ -2,7 +2,7 @@
 
 | 输入或输出能力 | 当前状态 | 验收条件 | 说明 |
 | --- | --- | --- | --- |
-| DXF 输入检查 | 接口已定义，待实现 | 使用真实 DXF 样本完成解析、诊断和 SceneDraft 验收 | DXF 是首条验收路径。当前仓库不解析 DXF。 |
+| DXF 输入检查 | 候选 POC 已实现，`continue-validation`（非正式支持） | 使用私有脱敏 DXF 样本完成实体覆盖、诊断、重复性和 SceneDraft 验收 | ACadSharp 3.6.35 仅通过 `IDxfInspector` 用于最小公开合成样本；尚未被接受为产品依赖，也不得表述为完整 DXF 支持。 |
 | DWG 输入检查 | 不支持 | 经独立实现、样本和回归测试验证后才可调整状态 | `UnsupportedDwgProbe` 明确返回 `Unsupported`；不执行转换。 |
 | Blender 处理 | 接口已定义，未执行 | 配置路径、受控进程、取消、产物和样本验证均通过 | 当前没有启动 Blender 的实现。 |
 | 3D Tiles 转换 | 未配置 | 选定转换器并完成端到端样本验证 | 默认适配器返回 `NotConfigured`，不会声明成功或生成输出。 |

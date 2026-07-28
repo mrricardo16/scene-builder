@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SceneBuilder.Domain\SceneBuilder.Domain.csproj" />
+    <PackageReference Include="ACadSharp" Version="3.6.35" />
   </ItemGroup>
 
 </Project>
