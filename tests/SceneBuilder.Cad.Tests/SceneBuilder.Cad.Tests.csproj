@@ -23,6 +23,22 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\fixtures\synthetic\public-synthetic-closed-polyline.dxf">
+      <Link>fixtures\synthetic\public-synthetic-closed-polyline.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\fixtures\synthetic\public-synthetic-empty.dxf">
+      <Link>fixtures\synthetic\public-synthetic-empty.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\fixtures\synthetic\public-synthetic-unitless-line.dxf">
+      <Link>fixtures\synthetic\public-synthetic-unitless-line.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\fixtures\synthetic\public-synthetic-unmapped-circle.dxf">
+      <Link>fixtures\synthetic\public-synthetic-unmapped-circle.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\fixtures\synthetic\public-synthetic-wall.dxf">
       <Link>fixtures\synthetic\public-synthetic-wall.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

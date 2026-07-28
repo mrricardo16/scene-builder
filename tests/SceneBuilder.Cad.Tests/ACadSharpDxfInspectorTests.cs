@@ -3,6 +3,61 @@ namespace SceneBuilder.Cad.Tests;
 public sealed class ACadSharpDxfInspectorTests
 {
     [Fact]
+    public async Task InspectAsync_PublicSyntheticEmptyDxf_ReturnsSucceededEmptyDocumentWithInformationDiagnostic()
+    {
+        var result = await InspectFixtureAsync("public-synthetic-empty.dxf");
+
+        Assert.Equal(CadInspectionStatus.Succeeded, result.Status);
+        var document = Assert.IsType<CadDocumentModel>(result.Document);
+        Assert.Empty(document.Layers);
+        Assert.Equal(CadBounds.Empty, document.Bounds);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Information, diagnostic.Severity);
+        Assert.Equal("DXF_DOCUMENT_EMPTY", diagnostic.Code);
+    }
+
+    [Fact]
+    public async Task InspectAsync_PublicSyntheticClosedPolylineDxf_ReturnsCorrectBoundsAndEntityCount()
+    {
+        var result = await InspectFixtureAsync("public-synthetic-closed-polyline.dxf");
+
+        Assert.Equal(CadInspectionStatus.Succeeded, result.Status);
+        var document = Assert.IsType<CadDocumentModel>(result.Document);
+        var outlineLayer = Assert.Single(document.Layers);
+        Assert.Equal("OUTLINE", outlineLayer.Name);
+        Assert.Equal(1, outlineLayer.EntityCount);
+        Assert.Equal(new CadBounds(0, 0, 0, 100, 50, 0), document.Bounds);
+    }
+
+    [Fact]
+    public async Task InspectAsync_PublicSyntheticUnitlessDxf_ReturnsUnitlessUnitAndUnknownUnitWarning()
+    {
+        var result = await InspectFixtureAsync("public-synthetic-unitless-line.dxf");
+
+        Assert.Equal(CadInspectionStatus.Succeeded, result.Status);
+        var document = Assert.IsType<CadDocumentModel>(result.Document);
+        Assert.Equal(CadUnit.Unitless, document.Unit);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal("DXF_UNIT_UNKNOWN", diagnostic.Code);
+    }
+
+    [Fact]
+    public async Task InspectAsync_PublicSyntheticUnmappedCircleDxf_ReturnsSucceededDocumentWithUnsupportedEntityWarning()
+    {
+        var result = await InspectFixtureAsync("public-synthetic-unmapped-circle.dxf");
+
+        Assert.Equal(CadInspectionStatus.Succeeded, result.Status);
+        var document = Assert.IsType<CadDocumentModel>(result.Document);
+        Assert.Single(document.Layers);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal("DXF_ENTITY_UNSUPPORTED", diagnostic.Code);
+        Assert.DoesNotContain("20.0", diagnostic.Message);
+        Assert.DoesNotContain("30.0", diagnostic.Message);
+    }
+
+    [Fact]
     public async Task InspectAsync_PublicSyntheticWallDxf_ReturnsMappedDocument()
     {
         var inspector = new ACadSharpDxfInspector();
@@ -92,5 +147,23 @@ public sealed class ACadSharpDxfInspectorTests
                 SourceFormat = CadSourceFormat.Dxf
             },
             cancellationSource.Token));
+    }
+
+    private static Task<CadInspectionResult> InspectFixtureAsync(string fixtureName)
+    {
+        var inspector = new ACadSharpDxfInspector();
+        var fixturePath = Path.Combine(
+            AppContext.BaseDirectory,
+            "fixtures",
+            "synthetic",
+            fixtureName);
+
+        return inspector.InspectAsync(
+            new CadInspectionRequest
+            {
+                SourcePath = fixturePath,
+                SourceFormat = CadSourceFormat.Dxf
+            },
+            CancellationToken.None);
     }
 }

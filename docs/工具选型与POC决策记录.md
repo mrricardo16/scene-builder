@@ -41,8 +41,8 @@
 - **候选范围**：仅用于 SB-03 的公开合成 ASCII DXF 检查 POC；实现必须位于 `IDxfInspector` 之后，领域模型不得暴露 ACadSharp 类型。
 - **候选版本**：NuGet 包 `ACadSharp` 3.6.35，NuGet 页面声明包适用于 .NET Standard 2.0 及更高目标框架，并提供 ASCII DXF 读写能力。
 - **许可证证据**：NuGet 3.6.35 页面标注 MIT license；项目官方仓库 `DomCR/ACadSharp` 的 `LICENSE` 文件为 MIT License，版权为 Albert Domenech（2021）。核验日期：2026-07-28。
-- **当前决定**：`continue-validation`。许可证和最小公开样本已完成初步核验，但尚未完成匿名真实样本、实体覆盖、失败诊断一致性、重复性与运行环境证据，不能视为已接受依赖，也不得修改公开 CAD 支持状态。
-- **本轮验证证据**：`tests/fixtures/synthetic/public-synthetic-wall.dxf`、对应单元测试及 `dotnet test` 输出；测试只覆盖一个 `WALL` 图层上的 `LINE` 实体。
-- **后续门禁**：在私有脱敏样本上记录工具版本、实际命令、诊断代码、许可复核和结论；所有证据齐全前继续维持 `continue-validation`。
+- **当前决定**：`continue-validation`。许可证和公开合成样本已完成初步核验，但尚未完成匿名真实样本、实体覆盖、失败诊断一致性、重复性与运行环境证据，不能视为已接受依赖，也不得修改公开 CAD 支持状态。
+- **本轮验证证据**：`tests/fixtures/synthetic/` 下的 `public-synthetic-wall.dxf`、`public-synthetic-empty.dxf`、`public-synthetic-closed-polyline.dxf`、`public-synthetic-unitless-line.dxf` 和 `public-synthetic-unmapped-circle.dxf`，以及对应的 8 项 `SceneBuilder.Cad.Tests` 单元测试。已验证 `LINE`、闭合 `LWPOLYLINE` 的范围/图层计数，以及 `DXF_DOCUMENT_EMPTY`、`DXF_UNIT_UNKNOWN`、`DXF_ENTITY_UNSUPPORTED` 三个稳定诊断；`CIRCLE` 只保留通用范围/图层信息，不暴露原始实体负载。
+- **未验证门禁**：必须在私有脱敏真实样本上验证图层/图块命名、Xref、代理对象、更多实体、错误诊断一致性与可取消性；还必须在目标 Windows/.NET 运行环境中以固定样本至少重复执行 10 次，记录工具版本、命令、耗时、哈希和结果摘要。以上私有样本与重复性证据未完成前继续维持 `continue-validation`。
 
 POC 记录必须含样本标识、环境/工具版本、实际命令、结果、失败诊断、许可证结论和决定。缺任一项只能标记 `continue-validation`，不能接受候选。

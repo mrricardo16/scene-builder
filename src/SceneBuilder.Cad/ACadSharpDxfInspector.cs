@@ -44,10 +44,13 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
             var document = DxfReader.Read(sourcePath, null);
             cancellationToken.ThrowIfCancellationRequested();
 
+            var mappedDocument = MapDocument(document, sourcePath);
+
             return new CadInspectionResult
             {
                 Status = CadInspectionStatus.Succeeded,
-                Document = MapDocument(document, sourcePath)
+                Document = mappedDocument,
+                Diagnostics = mappedDocument.Diagnostics
             };
         }
         catch (OperationCanceledException)
@@ -83,8 +86,56 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
             SourceFormat = CadSourceFormat.Dxf,
             Unit = MapUnit(sourceDocument.Header.InsUnits),
             Bounds = MapBounds(entities),
-            Layers = layers
+            Layers = layers,
+            Diagnostics = MapDiagnostics(entities, sourceDocument.Header.InsUnits, sourcePath)
         };
+    }
+
+    private static IReadOnlyList<SceneDiagnostic> MapDiagnostics(
+        IReadOnlyCollection<Entity> entities,
+        ACadSharp.Types.Units.UnitsType sourceUnit,
+        string sourcePath)
+    {
+        var diagnostics = new List<SceneDiagnostic>();
+
+        if (entities.Count == 0)
+        {
+            diagnostics.Add(new SceneDiagnostic
+            {
+                Severity = DiagnosticSeverity.Information,
+                Code = "DXF_DOCUMENT_EMPTY",
+                Message = "The DXF document contains no entities.",
+                SourcePath = sourcePath
+            });
+        }
+
+        if (MapUnit(sourceUnit) is CadUnit.Unknown or CadUnit.Unitless)
+        {
+            diagnostics.Add(new SceneDiagnostic
+            {
+                Severity = DiagnosticSeverity.Warning,
+                Code = "DXF_UNIT_UNKNOWN",
+                Message = "The DXF insertion unit cannot be normalized to a known length unit.",
+                SourcePath = sourcePath
+            });
+        }
+
+        foreach (var entityTypeName in entities
+                     .Where(entity => entity is not Line and not LwPolyline)
+                     .Select(entity => entity.GetType().Name)
+                     .Distinct(StringComparer.Ordinal)
+                     .OrderBy(name => name, StringComparer.Ordinal))
+        {
+            diagnostics.Add(new SceneDiagnostic
+            {
+                Severity = DiagnosticSeverity.Warning,
+                Code = "DXF_ENTITY_UNSUPPORTED",
+                Message = $"The DXF entity type '{entityTypeName}' has no SB-03 mapping.",
+                SourcePath = sourcePath
+            });
+        }
+
+        return diagnostics;
     }
 
     private static CadBounds MapBounds(IEnumerable<Entity> entities)
