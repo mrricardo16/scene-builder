@@ -13,6 +13,7 @@
 ## 当前状态
 
 - 已完成 ACadSharp 3.6.35 的最小 DXF 检查 POC：公开合成 ASCII DXF 可映射为 `CadDocumentModel`，覆盖线段、空文档、闭合 `LWPOLYLINE`、无单位和未映射 `CIRCLE`；缺失与损坏输入返回稳定诊断。
+- ezdxf 1.4.4 已在隔离 Python 环境成功读取一份私有 `AC1032` DXF，并枚举图层、Block 和模型空间实体；它仍是未接入产品的候选。该样本的单位未声明，且范围计算、代理对象/Xref 保真、重复性、取消和 .NET 契约映射尚未通过。
 - 当前决定为 `continue-validation`，不是已接受依赖或正式 DXF 支持；仍需私有脱敏真实样本、实体覆盖、重复性和运行环境证据。
 - ACadSharp 的 `DxfReader.Read` 为同步读取。检查器在读取前和读取返回后检查 `CancellationToken`；底层读取开始后不能由当前适配器中断，取消会在读取返回后被观察并抛出。
 

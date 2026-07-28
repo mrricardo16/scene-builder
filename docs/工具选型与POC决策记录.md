@@ -57,4 +57,12 @@
 - **本轮验证证据**：`tests/fixtures/synthetic/` 下的 `public-synthetic-wall.dxf`、`public-synthetic-empty.dxf`、`public-synthetic-closed-polyline.dxf`、`public-synthetic-unitless-line.dxf` 和 `public-synthetic-unmapped-circle.dxf`，以及对应的 8 项 `SceneBuilder.Cad.Tests` 单元测试。已验证 `LINE`、闭合 `LWPOLYLINE` 的范围/图层计数，以及 `DXF_DOCUMENT_EMPTY`、`DXF_UNIT_UNKNOWN`、`DXF_ENTITY_UNSUPPORTED` 三个稳定诊断；`CIRCLE` 只保留通用范围/图层信息，不暴露原始实体负载。
 - **未验证门禁**：必须在私有脱敏真实样本上验证图层/图块命名、Xref、代理对象、更多实体、错误诊断一致性与可取消性；还必须在目标 Windows/.NET 运行环境中以固定样本至少重复执行 10 次，记录工具版本、命令、耗时、哈希和结果摘要。以上私有样本与重复性证据未完成前继续维持 `continue-validation`。
 
+## DXF POC 新候选：ezdxf 1.4.4
+
+- **候选范围**：仅用于独立私有 POC；在受控的隔离 Python 3.14.4 虚拟环境中安装，未接入 .NET 产品代码、`IDxfInspector` 或公开 CLI。
+- **许可证与兼容性证据**：ezdxf 1.4.4 的官方文档与 PyPI 元数据均标示 MIT 许可证，支持 Python 3.14 和 `AC1032`（AutoCAD 2018）DXF。
+- **本轮结果**：对一份私有、由 Core Console 生成的 `AC1032` ASCII DXF，读取、图层/Block/模型空间实体枚举均成功；私有报告记录版本、单位、图层数、Block 数、实体类型计数和耗时。文档声明的单位为 0，因此后续映射必须产生 `DXF_UNIT_UNKNOWN`，不得擅自推断为毫米。
+- **已知限制**：该样本含 `ACAD_PROXY_ENTITY` 及其他 AutoCAD 扩展数据。通用递归包围盒计算会遍历复杂块并产生扩展数据警告，尚未形成可接受的范围结果；范围计算留在几何标准化 POC，不把它误报为解析器成功能力。
+- **当前决定**：`continue-validation`。ezdxf 是真实 DXF 的可行解析候选，但尚未完成第二样本、重复性、Xref/代理对象保真、取消/资源限制，以及到 `CadDocumentModel` 的无实现类型泄漏映射，不能作为已接受依赖或正式 DXF 支持。
+
 POC 记录必须含样本标识、环境/工具版本、实际命令、结果、失败诊断、许可证结论和决定。缺任一项只能标记 `continue-validation`，不能接受候选。
