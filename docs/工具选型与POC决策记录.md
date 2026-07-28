@@ -46,7 +46,8 @@
 - **Core Console feasibility POC:** the initial `SAVEAS` script was invalid because its prompt order did not match the installed AutoCAD command flow, and its ASCII script encoding could not represent a Chinese output directory. The corrected private POC used `/readonly`, `FILEDIA=0`, `CMDDIA=0`, `DXFOUT`, an ASCII-only private output path, precision 16, and `QUIT`.
 - **Core Console result:** AutoCAD Core Console 25.1.60.0.0 exited with code 0 and produced a nonempty ASCII DXF whose header identifies `AC1032` and whose tail contains `EOF`; the private source fingerprint was unchanged. This establishes only the feasibility of the controlled DWG-to-DXF conversion step, not product DWG support.
 - **Downstream result:** ACadSharp 3.6.35 did not complete inspection of this private converted DXF within a 10-minute isolated-process limit. The DXF parser is therefore not accepted for the converted real-world output.
-- **Required next evidence:** repeat the corrected conversion on a separately anonymized sample; establish converter licensing, Xref/proxy-object fidelity, cancellation and reproducibility; and select or improve the DXF parser before any product integration.
+- **Repeat-conversion evidence:** the corrected Core Console flow also completed on the separately anonymized sample and produced a nonempty `AC1032` DXF. Both source drawings emitted missing-SHX warnings; this does not invalidate the conversion evidence, but text and shape-symbol fidelity remain unverified.
+- **Required next evidence:** establish converter licensing, Xref/proxy-object fidelity, cancellation and reproducibility; and select or improve the DXF parser before any product integration.
 
 ## DXF POC 当前候选：ACadSharp 3.6.35
 
@@ -61,8 +62,9 @@
 
 - **候选范围**：仅用于独立私有 POC；在受控的隔离 Python 3.14.4 虚拟环境中安装，未接入 .NET 产品代码、`IDxfInspector` 或公开 CLI。
 - **许可证与兼容性证据**：ezdxf 1.4.4 的官方文档与 PyPI 元数据均标示 MIT 许可证，支持 Python 3.14 和 `AC1032`（AutoCAD 2018）DXF。
-- **本轮结果**：对一份私有、由 Core Console 生成的 `AC1032` ASCII DXF，读取、图层/Block/模型空间实体枚举均成功；私有报告记录版本、单位、图层数、Block 数、实体类型计数和耗时。文档声明的单位为 0，因此后续映射必须产生 `DXF_UNIT_UNKNOWN`，不得擅自推断为毫米。
-- **已知限制**：该样本含 `ACAD_PROXY_ENTITY` 及其他 AutoCAD 扩展数据。通用递归包围盒计算会遍历复杂块并产生扩展数据警告，尚未形成可接受的范围结果；范围计算留在几何标准化 POC，不把它误报为解析器成功能力。
-- **当前决定**：`continue-validation`。ezdxf 是真实 DXF 的可行解析候选，但尚未完成第二样本、重复性、Xref/代理对象保真、取消/资源限制，以及到 `CadDocumentModel` 的无实现类型泄漏映射，不能作为已接受依赖或正式 DXF 支持。
+- **本轮结果**：对两份私有、由 Core Console 生成的 `AC1032` ASCII DXF，读取、图层/Block/模型空间实体枚举均成功；私有报告记录版本、单位、图层数、Block 数、实体类型计数和耗时。一个样本的单位为 0，映射为 `CadUnit.Unitless` 并产生 `DXF_UNIT_UNKNOWN`；另一个样本的 `INSUNITS` 为 4，映射为 `CadUnit.Millimeters`。不得擅自推断未声明单位。
+- **映射 POC**：私有映射报告仅保存脱敏样本标识、领域枚举、图层/实体摘要和稳定摘要；不保存绝对路径、图层名或 Block 名。它验证了单位、图层摘要和稳定键可在不泄漏实现类型的条件下映射，但当前 `CadDocumentModel` 没有 Block 目录，且不能区分“尚未计算范围”与空范围，因此结果只能标记为 `Partial`，不能伪造完整映射。
+- **已知限制**：其中一个样本含 `ACAD_PROXY_ENTITY` 及其他 AutoCAD 扩展数据。通用递归包围盒计算会遍历复杂块并产生扩展数据警告，尚未形成可接受的范围结果；范围计算留在几何标准化 POC，不把它误报为解析器成功能力。
+- **当前决定**：`continue-validation`。ezdxf 是真实 DXF 的可行解析候选，但尚未完成重复性、Xref/代理对象保真、取消/资源限制，以及 Block 目录和范围语义的契约设计，不能作为已接受依赖或正式 DXF 支持。
 
 POC 记录必须含样本标识、环境/工具版本、实际命令、结果、失败诊断、许可证结论和决定。缺任一项只能标记 `continue-validation`，不能接受候选。
