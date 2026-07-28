@@ -43,8 +43,10 @@
 - **Result:** both attempts returned `Unavailable` with `DWG_PROBE_TIMED_OUT`; entity, layer, block, unit, and bounds values were unavailable. The private report records byte size and a 12-character SHA-256 prefix only.
 - **License conclusion:** the candidate package is MIT according to the previously recorded package and repository license review; runtime compatibility remains unaccepted because the private direct-read POC did not complete.
 - **Decision:** `continue-validation`. DWG is not a supported product input, and no public CAD support status changes.
-- **Core Console POC:** AutoCAD Core Console 25.1.60.0.0 was executed once as an authorized private fallback POC with its `/readonly` launch option, command-line `SAVEAS DXF`, and a 30-second limit. It timed out before producing a verifiable DXF. The private execution record captures the invocation semantics and confirms that the source fingerprint was unchanged; no conversion artifact is retained.
-- **Required next evidence:** investigate both direct-read and Core Console timeouts with an isolated reproducible sample, establish cancellation/timeout behavior, and only then evaluate any further conversion POC with licensing, output fidelity, and reproducibility evidence.
+- **Core Console feasibility POC:** the initial `SAVEAS` script was invalid because its prompt order did not match the installed AutoCAD command flow, and its ASCII script encoding could not represent a Chinese output directory. The corrected private POC used `/readonly`, `FILEDIA=0`, `CMDDIA=0`, `DXFOUT`, an ASCII-only private output path, precision 16, and `QUIT`.
+- **Core Console result:** AutoCAD Core Console 25.1.60.0.0 exited with code 0 and produced a nonempty ASCII DXF whose header identifies `AC1032` and whose tail contains `EOF`; the private source fingerprint was unchanged. This establishes only the feasibility of the controlled DWG-to-DXF conversion step, not product DWG support.
+- **Downstream result:** ACadSharp 3.6.35 did not complete inspection of this private converted DXF within a 10-minute isolated-process limit. The DXF parser is therefore not accepted for the converted real-world output.
+- **Required next evidence:** repeat the corrected conversion on a separately anonymized sample; establish converter licensing, Xref/proxy-object fidelity, cancellation and reproducibility; and select or improve the DXF parser before any product integration.
 
 ## DXF POC 当前候选：ACadSharp 3.6.35
 

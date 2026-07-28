@@ -13,7 +13,7 @@
 
 ## 当前状态
 
-明确未支持；当前私有 POC 的直接读取和 Core Console 转换均在 30 秒内超时，结论为 `continue-validation`。任何“DWG 已支持”声明必须以独立实现、真实样本和回归测试为前提。
+明确未支持；直接读取在 30 秒内超时。修正 Core Console 的脚本提示顺序、对话变量和 ASCII 输出路径后，私有 POC 已能生成结构完整的 DXF，但现有 ACadSharp 检查器在 10 分钟内未完成解析，结论仍为 `continue-validation`。任何“DWG 已支持”声明必须以独立实现、真实样本和回归测试为前提。
 
 ## 追溯
 
