@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.sln text eol=crlf working-tree-encoding=UTF-8
+*.cs text working-tree-encoding=UTF-8
+*.csproj text working-tree-encoding=UTF-8
+*.props text working-tree-encoding=UTF-8
+*.targets text working-tree-encoding=UTF-8
+*.json text working-tree-encoding=UTF-8
+*.md text working-tree-encoding=UTF-8
+*.yml text working-tree-encoding=UTF-8
+*.yaml text working-tree-encoding=UTF-8
