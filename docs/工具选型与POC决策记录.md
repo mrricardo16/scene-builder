@@ -36,6 +36,16 @@
 }
 ```
 
+## DWG POC record: ACadSharp 3.6.35 (2026-07-28)
+
+- **Scope:** two private, anonymized real-world DWG samples. The evidence uses only `dwg-private-001` and `dwg-private-002`; no source names, paths, drawing text, coordinates, or drawings are stored in this repository.
+- **Executed candidate:** `ACadSharp` 3.6.35 through a private process-isolated direct-read probe, with one 30-second-limited attempt per sample. The synchronous reader is not published as an in-process product adapter because its underlying read cannot be cancelled safely.
+- **Result:** both attempts returned `Unavailable` with `DWG_PROBE_TIMED_OUT`; entity, layer, block, unit, and bounds values were unavailable. The private report records byte size and a 12-character SHA-256 prefix only.
+- **License conclusion:** the candidate package is MIT according to the previously recorded package and repository license review; runtime compatibility remains unaccepted because the private direct-read POC did not complete.
+- **Decision:** `continue-validation`. DWG is not a supported product input, and no public CAD support status changes.
+- **Core Console POC:** AutoCAD Core Console 25.1.60.0.0 was executed once as an authorized private fallback POC with its `/readonly` launch option, command-line `SAVEAS DXF`, and a 30-second limit. It timed out before producing a verifiable DXF. The private execution record captures the invocation semantics and confirms that the source fingerprint was unchanged; no conversion artifact is retained.
+- **Required next evidence:** investigate both direct-read and Core Console timeouts with an isolated reproducible sample, establish cancellation/timeout behavior, and only then evaluate any further conversion POC with licensing, output fidelity, and reproducibility evidence.
+
 ## DXF POC 当前候选：ACadSharp 3.6.35
 
 - **候选范围**：仅用于 SB-03 的公开合成 ASCII DXF 检查 POC；实现必须位于 `IDxfInspector` 之后，领域模型不得暴露 ACadSharp 类型。
