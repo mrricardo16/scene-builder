@@ -1,5 +1,9 @@
 # SB-03：DXF 检查门禁
 
+## 与 SB-06 的交接
+
+SB-03 的 DXF 适配器负责把公开合成 DXF 映射为 `CadGeometryDocument`，SB-05 负责单位与局部坐标标准化。SB-06 只消费 `NormalizedCadGeometryDocument`，不读取文件、不引用 ACadSharp，也不改变 DXF 检查状态。Circle、ARC、LINE、LWPOLYLINE 的基础提取成功不代表墙体、房间或设备识别成功；该语义判断仍在后续规则阶段。
+
 ## 目标
 
 将 DXF 建立为首条可验收输入路径，并以 `CadDocumentModel` 提供稳定、脱敏的结构摘要；它不是完整 CAD 几何模型或公开报告格式。

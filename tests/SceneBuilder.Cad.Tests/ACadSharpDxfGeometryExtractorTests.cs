@@ -88,6 +88,30 @@ public sealed class ACadSharpDxfGeometryExtractorTests
         Assert.Equal(firstPolyline.Vertices, secondPolyline.Vertices);
     }
 
+    [Fact]
+    public async Task ExtractAsync_PublicSyntheticContoursDxf_NormalizesAndBuildsSourceDefinedContours()
+    {
+        var extraction = await ExtractFixtureAsync("public-synthetic-contours.dxf");
+        var geometry = Assert.IsType<CadGeometryDocument>(extraction.Document);
+
+        var normalization = new CadGeometryNormalizer().Normalize(geometry);
+        Assert.Equal(CadGeometryExtractionStatus.Succeeded, extraction.Status);
+        Assert.Equal(CadGeometryNormalizationStatus.Succeeded, normalization.Status);
+        var contours = new CadContourBuilder().Build(Assert.IsType<NormalizedCadGeometryDocument>(normalization.Document));
+
+        Assert.Equal(CadContourBuildStatus.Succeeded, contours.Status);
+        Assert.Collection(
+            contours.Document!.Contours,
+            contour =>
+            {
+                var polygon = Assert.IsType<CadSegmentContour>(contour);
+                Assert.Equal(CadContourValidationState.Valid, polygon.ValidationState);
+                Assert.Equal(0.005, polygon.SignedAreaSquareMeters, precision: 10);
+            },
+            contour => Assert.IsType<CadCircleContour>(contour));
+        Assert.Single(contours.Document.OpenSegments);
+    }
+
     private static Task<CadGeometryExtractionResult> ExtractFixtureAsync(string fixtureName)
     {
         var fixturePath = Path.Combine(

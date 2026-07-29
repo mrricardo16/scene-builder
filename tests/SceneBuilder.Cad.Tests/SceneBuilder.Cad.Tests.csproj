@@ -23,6 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\fixtures\synthetic\public-synthetic-contours.dxf">
+      <Link>fixtures\synthetic\public-synthetic-contours.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\fixtures\synthetic\public-synthetic-closed-polyline.dxf">
       <Link>fixtures\synthetic\public-synthetic-closed-polyline.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
