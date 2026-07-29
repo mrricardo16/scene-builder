@@ -27,6 +27,10 @@
       <Link>fixtures\synthetic\public-synthetic-closed-polyline.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\fixtures\synthetic\public-synthetic-block-summary.dxf">
+      <Link>fixtures\synthetic\public-synthetic-block-summary.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\fixtures\synthetic\public-synthetic-empty.dxf">
       <Link>fixtures\synthetic\public-synthetic-empty.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

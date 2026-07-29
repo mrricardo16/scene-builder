@@ -20,6 +20,13 @@ public enum CadUnit
     Feet = 6
 }
 
+public enum CadBoundsState
+{
+    NotEvaluated = 0,
+    Empty = 1,
+    Computed = 2
+}
+
 public enum DiagnosticSeverity
 {
     Information = 0,
@@ -41,15 +48,97 @@ public enum TilesConversionStatus
     Failed = 2
 }
 
-public sealed record CadBounds(
-    double MinX,
-    double MinY,
-    double MinZ,
-    double MaxX,
-    double MaxY,
-    double MaxZ)
+public sealed record CadBounds
 {
-    public static CadBounds Empty { get; } = new(0, 0, 0, 0, 0, 0);
+    public CadBounds(
+        double minX,
+        double minY,
+        double minZ,
+        double maxX,
+        double maxY,
+        double maxZ)
+        : this(minX, minY, minZ, maxX, maxY, maxZ, CadBoundsState.Computed)
+    {
+    }
+
+    private CadBounds(
+        double minX,
+        double minY,
+        double minZ,
+        double maxX,
+        double maxY,
+        double maxZ,
+        CadBoundsState state)
+    {
+        if (state is CadBoundsState.Computed)
+        {
+            ValidateComputedCoordinates(minX, minY, minZ, maxX, maxY, maxZ);
+        }
+
+        MinX = minX;
+        MinY = minY;
+        MinZ = minZ;
+        MaxX = maxX;
+        MaxY = maxY;
+        MaxZ = maxZ;
+        State = state;
+    }
+
+    public double MinX { get; }
+
+    public double MinY { get; }
+
+    public double MinZ { get; }
+
+    public double MaxX { get; }
+
+    public double MaxY { get; }
+
+    public double MaxZ { get; }
+
+    public CadBoundsState State { get; }
+
+    public static CadBounds NotEvaluated { get; } = new(0, 0, 0, 0, 0, 0, CadBoundsState.NotEvaluated);
+
+    public static CadBounds Empty { get; } = new(0, 0, 0, 0, 0, 0, CadBoundsState.Empty);
+
+    public static CadBounds Computed(
+        double minX,
+        double minY,
+        double minZ,
+        double maxX,
+        double maxY,
+        double maxZ) =>
+        new(minX, minY, minZ, maxX, maxY, maxZ);
+
+    private static void ValidateComputedCoordinates(
+        double minX,
+        double minY,
+        double minZ,
+        double maxX,
+        double maxY,
+        double maxZ)
+    {
+        ValidateFinite(minX, nameof(minX));
+        ValidateFinite(minY, nameof(minY));
+        ValidateFinite(minZ, nameof(minZ));
+        ValidateFinite(maxX, nameof(maxX));
+        ValidateFinite(maxY, nameof(maxY));
+        ValidateFinite(maxZ, nameof(maxZ));
+
+        if (minX > maxX || minY > maxY || minZ > maxZ)
+        {
+            throw new ArgumentException("Minimum bounds must not exceed maximum bounds.");
+        }
+    }
+
+    private static void ValidateFinite(double value, string parameterName)
+    {
+        if (!double.IsFinite(value))
+        {
+            throw new ArgumentOutOfRangeException(parameterName, "Bounds coordinates must be finite.");
+        }
+    }
 }
 
 public sealed record SceneDiagnostic
@@ -73,7 +162,41 @@ public sealed record CadLayerModel
 
     public int EntityCount { get; init; }
 
-    public CadBounds Bounds { get; init; } = CadBounds.Empty;
+    public CadBounds Bounds { get; init; } = CadBounds.NotEvaluated;
+}
+
+public sealed record CadBlockModel
+{
+    public CadBlockModel(string name, int entityCount, CadBounds? bounds = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(entityCount);
+
+        Name = name ?? string.Empty;
+        EntityCount = entityCount;
+        Bounds = bounds ?? CadBounds.NotEvaluated;
+    }
+
+    public string Name { get; }
+
+    public int EntityCount { get; }
+
+    public CadBounds Bounds { get; }
+}
+
+public sealed record CadEntityTypeSummary
+{
+    public CadEntityTypeSummary(string type, int entityCount)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(type);
+        ArgumentOutOfRangeException.ThrowIfNegative(entityCount);
+
+        Type = type;
+        EntityCount = entityCount;
+    }
+
+    public string Type { get; }
+
+    public int EntityCount { get; }
 }
 
 public sealed record CadDocumentModel
@@ -84,9 +207,13 @@ public sealed record CadDocumentModel
 
     public CadUnit Unit { get; init; } = CadUnit.Unknown;
 
-    public CadBounds Bounds { get; init; } = CadBounds.Empty;
+    public CadBounds Bounds { get; init; } = CadBounds.NotEvaluated;
 
     public IReadOnlyList<CadLayerModel> Layers { get; init; } = Array.Empty<CadLayerModel>();
+
+    public IReadOnlyList<CadBlockModel> Blocks { get; init; } = Array.Empty<CadBlockModel>();
+
+    public IReadOnlyList<CadEntityTypeSummary> EntityTypes { get; init; } = Array.Empty<CadEntityTypeSummary>();
 
     public IReadOnlyList<SceneDiagnostic> Diagnostics { get; init; } = Array.Empty<SceneDiagnostic>();
 }
@@ -97,7 +224,7 @@ public sealed record SceneNode
 
     public string Name { get; init; } = string.Empty;
 
-    public CadBounds Bounds { get; init; } = CadBounds.Empty;
+    public CadBounds Bounds { get; init; } = CadBounds.NotEvaluated;
 
     public IReadOnlyList<string> SourceLayers { get; init; } = Array.Empty<string>();
 }

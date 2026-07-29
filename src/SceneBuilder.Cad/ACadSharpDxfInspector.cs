@@ -1,6 +1,8 @@
 using ACadSharp;
+using ACadSharp.Blocks;
 using ACadSharp.Entities;
 using ACadSharp.IO;
+using ACadSharp.Tables;
 using SceneBuilder.Domain;
 
 namespace SceneBuilder.Cad;
@@ -68,16 +70,25 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
 
     private static CadDocumentModel MapDocument(CadDocument sourceDocument, string sourcePath)
     {
-        var entities = sourceDocument.Entities.ToArray();
-        var layers = entities
-            .GroupBy(entity => entity.Layer?.Name ?? "0", StringComparer.Ordinal)
+        var entitySnapshots = sourceDocument.Entities
+            .Select(CreateEntitySnapshot)
+            .ToArray();
+
+        var layers = entitySnapshots
+            .GroupBy(snapshot => snapshot.LayerName, StringComparer.Ordinal)
             .OrderBy(group => group.Key, StringComparer.Ordinal)
             .Select(group => new CadLayerModel
             {
                 Name = group.Key,
                 EntityCount = group.Count(),
-                Bounds = MapBounds(group)
+                Bounds = CadBoundsAggregator.Aggregate(group.Select(snapshot => snapshot.Bounds))
             })
+            .ToArray();
+
+        var entityTypes = entitySnapshots
+            .GroupBy(snapshot => snapshot.EntityType, StringComparer.Ordinal)
+            .OrderBy(group => group.Key, StringComparer.Ordinal)
+            .Select(group => new CadEntityTypeSummary(group.Key, group.Count()))
             .ToArray();
 
         return new CadDocumentModel
@@ -85,20 +96,54 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
             SourcePath = sourcePath,
             SourceFormat = CadSourceFormat.Dxf,
             Unit = MapUnit(sourceDocument.Header.InsUnits),
-            Bounds = MapBounds(entities),
+            Bounds = CadBoundsAggregator.Aggregate(entitySnapshots.Select(snapshot => snapshot.Bounds)),
             Layers = layers,
-            Diagnostics = MapDiagnostics(entities, sourceDocument.Header.InsUnits, sourcePath)
+            Blocks = MapBlocks(sourceDocument),
+            EntityTypes = entityTypes,
+            Diagnostics = MapDiagnostics(entitySnapshots, sourceDocument.Header.InsUnits, sourcePath)
         };
     }
 
+    private static IReadOnlyList<CadBlockModel> MapBlocks(CadDocument sourceDocument)
+    {
+        return sourceDocument.BlockRecords
+            .Where(IsOrdinaryBlock)
+            .OrderBy(block => block.Name, StringComparer.Ordinal)
+            .Select(MapBlock)
+            .ToArray();
+    }
+
+    private static CadBlockModel MapBlock(BlockRecord block)
+    {
+        var directEntityBounds = block.Entities
+            .Select(EvaluateBounds)
+            .ToArray();
+
+        return new CadBlockModel(
+            block.Name,
+            directEntityBounds.Length,
+            CadBoundsAggregator.Aggregate(directEntityBounds));
+    }
+
+    private static bool IsOrdinaryBlock(BlockRecord block)
+    {
+        if (block.Layout is not null)
+        {
+            return false;
+        }
+
+        var blockFlags = block.BlockEntity?.Flags ?? BlockTypeFlags.None;
+        return (blockFlags & (BlockTypeFlags.XRef | BlockTypeFlags.XRefOverlay)) == BlockTypeFlags.None;
+    }
+
     private static IReadOnlyList<SceneDiagnostic> MapDiagnostics(
-        IReadOnlyCollection<Entity> entities,
+        IReadOnlyCollection<EntityInspectionSnapshot> entitySnapshots,
         ACadSharp.Types.Units.UnitsType sourceUnit,
         string sourcePath)
     {
         var diagnostics = new List<SceneDiagnostic>();
 
-        if (entities.Count == 0)
+        if (entitySnapshots.Count == 0)
         {
             diagnostics.Add(new SceneDiagnostic
             {
@@ -120,9 +165,9 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
             });
         }
 
-        foreach (var entityTypeName in entities
-                     .Where(entity => entity is not Line and not LwPolyline)
-                     .Select(entity => entity.GetType().Name)
+        foreach (var runtimeTypeName in entitySnapshots
+                     .Where(snapshot => snapshot.Entity is not Line and not LwPolyline)
+                     .Select(snapshot => snapshot.RuntimeTypeName)
                      .Distinct(StringComparer.Ordinal)
                      .OrderBy(name => name, StringComparer.Ordinal))
         {
@@ -130,7 +175,7 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
             {
                 Severity = DiagnosticSeverity.Warning,
                 Code = "DXF_ENTITY_UNSUPPORTED",
-                Message = $"The DXF entity type '{entityTypeName}' has no SB-03 mapping.",
+                Message = $"The DXF entity type '{runtimeTypeName}' has no SB-03 mapping.",
                 SourcePath = sourcePath
             });
         }
@@ -138,26 +183,36 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
         return diagnostics;
     }
 
-    private static CadBounds MapBounds(IEnumerable<Entity> entities)
+    private static EntityInspectionSnapshot CreateEntitySnapshot(Entity entity)
     {
-        var points = entities
-            .Select(entity => entity.GetBoundingBox())
-            .SelectMany(bounds => new[] { bounds.Min, bounds.Max })
-            .Where(point =>
-                double.IsFinite(point.X) &&
-                double.IsFinite(point.Y) &&
-                double.IsFinite(point.Z))
-            .ToArray();
+        return new EntityInspectionSnapshot(
+            entity,
+            entity.Layer?.Name ?? "0",
+            NormalizeDxfEntityType(entity),
+            entity.GetType().Name,
+            EvaluateBounds(entity));
+    }
 
-        return points.Length == 0
-            ? CadBounds.Empty
-            : new CadBounds(
-                points.Min(point => point.X),
-                points.Min(point => point.Y),
-                points.Min(point => point.Z),
-                points.Max(point => point.X),
-                points.Max(point => point.Y),
-                points.Max(point => point.Z));
+    private static string NormalizeDxfEntityType(Entity entity) =>
+        entity.ObjectType.ToString().ToUpperInvariant();
+
+    private static CadBounds EvaluateBounds(Entity entity)
+    {
+        try
+        {
+            var bounds = entity.GetBoundingBox();
+            return CadBounds.Computed(
+                bounds.Min.X,
+                bounds.Min.Y,
+                bounds.Min.Z,
+                bounds.Max.X,
+                bounds.Max.Y,
+                bounds.Max.Z);
+        }
+        catch (Exception)
+        {
+            return CadBounds.NotEvaluated;
+        }
     }
 
     private static CadUnit MapUnit(ACadSharp.Types.Units.UnitsType unit)
@@ -191,4 +246,11 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
             ]
         };
     }
+
+    private sealed record EntityInspectionSnapshot(
+        Entity Entity,
+        string LayerName,
+        string EntityType,
+        string RuntimeTypeName,
+        CadBounds Bounds);
 }

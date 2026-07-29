@@ -7,6 +7,8 @@ public sealed class ModelDefaultsContractTests
 {
     [Theory]
     [InlineData("CadDocumentModel", "Layers")]
+    [InlineData("CadDocumentModel", "Blocks")]
+    [InlineData("CadDocumentModel", "EntityTypes")]
     [InlineData("CadDocumentModel", "Diagnostics")]
     [InlineData("SceneDraft", "Nodes")]
     [InlineData("SceneDraft", "Diagnostics")]
