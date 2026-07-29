@@ -9,6 +9,13 @@ public enum CadInspectionStatus
     Failed = 2
 }
 
+public enum CadGeometryExtractionStatus
+{
+    Succeeded = 0,
+    PartiallySucceeded = 1,
+    Failed = 2
+}
+
 public enum DwgProbeStatus
 {
     Unsupported = 0,
@@ -32,6 +39,15 @@ public sealed record CadInspectionResult
     public IReadOnlyList<SceneDiagnostic> Diagnostics { get; init; } = Array.Empty<SceneDiagnostic>();
 }
 
+public sealed record CadGeometryExtractionResult
+{
+    public CadGeometryExtractionStatus Status { get; init; } = CadGeometryExtractionStatus.Failed;
+
+    public CadGeometryDocument? Document { get; init; }
+
+    public IReadOnlyList<SceneDiagnostic> Diagnostics { get; init; } = Array.Empty<SceneDiagnostic>();
+}
+
 public sealed record DwgProbeResult
 {
     public DwgProbeStatus Status { get; init; } = DwgProbeStatus.Unsupported;
@@ -42,6 +58,13 @@ public sealed record DwgProbeResult
 public interface IDxfInspector
 {
     Task<CadInspectionResult> InspectAsync(
+        CadInspectionRequest request,
+        CancellationToken cancellationToken);
+}
+
+public interface ICadGeometryExtractor
+{
+    Task<CadGeometryExtractionResult> ExtractAsync(
         CadInspectionRequest request,
         CancellationToken cancellationToken);
 }

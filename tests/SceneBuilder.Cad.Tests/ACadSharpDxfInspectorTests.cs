@@ -51,7 +51,7 @@ public sealed class ACadSharpDxfInspectorTests
     }
 
     [Fact]
-    public async Task InspectAsync_PublicSyntheticUnmappedCircleDxf_ReturnsSucceededDocumentWithUnsupportedEntityWarning()
+    public async Task InspectAsync_PublicSyntheticCircleDxf_ReturnsSucceededDocumentWithoutUnsupportedEntityWarning()
     {
         var result = await InspectFixtureAsync("public-synthetic-unmapped-circle.dxf");
 
@@ -61,11 +61,7 @@ public sealed class ACadSharpDxfInspectorTests
         var entityType = Assert.Single(document.EntityTypes);
         Assert.Equal("CIRCLE", entityType.Type);
         Assert.Equal(1, entityType.EntityCount);
-        var diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-        Assert.Equal("DXF_ENTITY_UNSUPPORTED", diagnostic.Code);
-        Assert.DoesNotContain("20.0", diagnostic.Message);
-        Assert.DoesNotContain("30.0", diagnostic.Message);
+        Assert.Empty(result.Diagnostics);
     }
 
     [Fact]

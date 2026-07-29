@@ -17,7 +17,8 @@
 - `CadBoundsState` 已区分 `NotEvaluated`、`Empty` 和 `Computed`。所有模型空间实体先各自观察一次，再从快照聚合文档范围、图层范围、实体类型和未支持实体诊断；范围异常只降级该聚合范围，不把成功读取改写为 `DXF_PARSE_FAILED`。
 - `CadDocumentModel` 已包含非 null 的 `Blocks` 与 `EntityTypes` 只读摘要。实体类型只统计模型空间直接实体，使用大写 DXF 名称并按 Ordinal 排序；普通 Block 只统计直接子实体和本地范围，不递归、不中转 INSERT 变换、不加载 Xref。
 - Block 过滤使用 ACadSharp 的 `BlockRecord.Layout` 与 `BlockTypeFlags.XRef`/`XRefOverlay`，不依赖名称回退规则。公开合成样本已验证普通 Block、空 Block、模型空间 `INSERT`、排序和连续执行稳定性。
-- 当前决定仍为 `continue-validation`，不是完整 CAD 支持承诺。ezdxf 未接入；DWG 自动读取仍不支持；Xref 内容加载/保真、代理对象语义保真、完整几何实体存储、长时间读取的底层可中断取消和资源限制仍待后续门禁验证。
+- 在 SB-05 基础几何门禁中，公开合成 DXF 已可提取模型空间直接 `LINE`、`LWPOLYLINE`、`ARC`、`CIRCLE` 和 `INSERT`，并可按来源单位转换为局部米制坐标；这只是基础几何数据，不进行 Block 展开或厂房语义识别。
+- 当前决定仍为 `continue-validation`，不是完整 CAD 支持承诺。ezdxf 未接入；DWG 自动读取仍不支持；Xref 内容加载/保真、代理对象语义保真、完整 Block 几何实体存储、长时间读取的底层可中断取消和资源限制仍待后续门禁验证。
 - ACadSharp 的 `DxfReader.Read` 为同步读取。检查器在读取前和读取返回后检查 `CancellationToken`；底层读取开始后不能由当前适配器中断，取消会在读取返回后被观察并抛出。
 
 ## 追溯

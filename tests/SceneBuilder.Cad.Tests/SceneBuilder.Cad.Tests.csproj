@@ -31,6 +31,10 @@
       <Link>fixtures\synthetic\public-synthetic-block-summary.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\fixtures\synthetic\public-synthetic-basic-geometry.dxf">
+      <Link>fixtures\synthetic\public-synthetic-basic-geometry.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\fixtures\synthetic\public-synthetic-empty.dxf">
       <Link>fixtures\synthetic\public-synthetic-empty.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -41,6 +45,10 @@
     </None>
     <None Include="..\fixtures\synthetic\public-synthetic-unmapped-circle.dxf">
       <Link>fixtures\synthetic\public-synthetic-unmapped-circle.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\fixtures\synthetic\public-synthetic-unsupported-geometry.dxf">
+      <Link>fixtures\synthetic\public-synthetic-unsupported-geometry.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\fixtures\synthetic\public-synthetic-wall.dxf">

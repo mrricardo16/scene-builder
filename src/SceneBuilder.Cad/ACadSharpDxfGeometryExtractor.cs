@@ -3,9 +3,9 @@ using SceneBuilder.Domain;
 
 namespace SceneBuilder.Cad;
 
-public sealed class ACadSharpDxfInspector : IDxfInspector
+public sealed class ACadSharpDxfGeometryExtractor : ICadGeometryExtractor
 {
-    public Task<CadInspectionResult> InspectAsync(
+    public Task<CadGeometryExtractionResult> ExtractAsync(
         CadInspectionRequest request,
         CancellationToken cancellationToken)
     {
@@ -16,22 +16,20 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
         {
             return Task.FromResult(Failed(
                 "DXF_SOURCE_FORMAT_INVALID",
-                "The DXF inspector accepts only DXF source format requests.",
-                request.SourcePath));
+                "The DXF geometry extractor accepts only DXF source format requests."));
         }
 
         if (string.IsNullOrWhiteSpace(request.SourcePath) || !File.Exists(request.SourcePath))
         {
             return Task.FromResult(Failed(
                 "DXF_SOURCE_NOT_FOUND",
-                "The requested DXF source file does not exist.",
-                request.SourcePath));
+                "The requested DXF source file does not exist."));
         }
 
-        return Task.Run(() => InspectSource(request.SourcePath, cancellationToken), cancellationToken);
+        return Task.Run(() => ExtractSource(request.SourcePath, cancellationToken), cancellationToken);
     }
 
-    private static CadInspectionResult InspectSource(string sourcePath, CancellationToken cancellationToken)
+    private static CadGeometryExtractionResult ExtractSource(string sourcePath, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -40,13 +38,7 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
             var document = DxfReader.Read(sourcePath, null);
             cancellationToken.ThrowIfCancellationRequested();
 
-            var mappedDocument = ACadSharpDxfDocumentMapper.MapSummary(document, sourcePath);
-            return new CadInspectionResult
-            {
-                Status = CadInspectionStatus.Succeeded,
-                Document = mappedDocument,
-                Diagnostics = mappedDocument.Diagnostics
-            };
+            return ACadSharpDxfDocumentMapper.MapGeometry(document, sourcePath);
         }
         catch (OperationCanceledException)
         {
@@ -54,22 +46,21 @@ public sealed class ACadSharpDxfInspector : IDxfInspector
         }
         catch (Exception)
         {
-            return Failed("DXF_PARSE_FAILED", "The DXF source could not be parsed.", sourcePath);
+            return Failed("DXF_PARSE_FAILED", "The DXF source could not be parsed.");
         }
     }
 
-    private static CadInspectionResult Failed(string code, string message, string sourcePath) =>
+    private static CadGeometryExtractionResult Failed(string code, string message) =>
         new()
         {
-            Status = CadInspectionStatus.Failed,
+            Status = CadGeometryExtractionStatus.Failed,
             Diagnostics =
             [
                 new SceneDiagnostic
                 {
                     Severity = DiagnosticSeverity.Error,
                     Code = code,
-                    Message = message,
-                    SourcePath = sourcePath
+                    Message = message
                 }
             ]
         };
