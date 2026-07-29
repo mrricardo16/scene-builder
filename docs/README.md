@@ -18,6 +18,7 @@
 - [项目章程](项目章程.md)
 - [CAD 支持矩阵](CAD支持矩阵.md)
 - [SceneDraft 契约](场景草稿契约.md)
+- [SB-10 Blender 进程与最小三维草模](task-cards/SB-10-Blender进程与最小三维草模.md)
 - [运行规则](运行规则.md)
 - [分区与 3D Tiles](分区与3DTiles.md)
 - [性能基线](性能基线.md)

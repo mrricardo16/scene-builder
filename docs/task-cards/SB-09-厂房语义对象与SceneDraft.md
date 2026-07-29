@@ -17,6 +17,6 @@
 
 ## 非目标
 
-不实现 Mesh、墙体拉伸、地面三角剖分、柱体生成、道路 Buffer、门窗洞口、屋顶、材质、Blender、GLB、分区 GLB、3D Tiles、DWG、ezdxf、Xref 内容加载、代理对象语义转换、外部进程、HTTP、数据库、IDTS 集成或 JobReport v0 修改。
+SB-10 已在不改变本卡语义契约的前提下消费 SceneDraft 生成最小 Blender GLB 草模；本卡自身仍不实现 Mesh、墙体拉伸、地面三角剖分、柱体生成、道路 Buffer、门窗洞口、屋顶、材质、Blender、GLB、分区 GLB、3D Tiles、DWG、ezdxf、Xref 内容加载、代理对象语义转换、外部进程、HTTP、数据库、IDTS 集成或 JobReport v0 修改。
 
 系统已经能够将可信二维 CAD 分类结果转换为可供三维建模阶段消费的内部 SceneDraft；它尚未生成三维厂房。
