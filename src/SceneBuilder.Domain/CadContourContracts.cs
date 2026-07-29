@@ -121,6 +121,8 @@ public abstract record CadCurveSegment2
 
     public CadBounds Bounds { get; }
 
+    public virtual string Id => $"segment:{SourceOrder:D6}:{SegmentOrder:D6}";
+
     public virtual double LengthMeters => CadContourMath.Distance2(Start, End);
 }
 

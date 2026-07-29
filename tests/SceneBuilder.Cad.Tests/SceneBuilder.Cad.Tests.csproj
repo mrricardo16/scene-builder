@@ -23,6 +23,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\fixtures\synthetic\public-synthetic-repair-conflicts.dxf">
+      <Link>fixtures\synthetic\public-synthetic-repair-conflicts.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\fixtures\synthetic\public-synthetic-repairable-segments.dxf">
+      <Link>fixtures\synthetic\public-synthetic-repairable-segments.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\fixtures\synthetic\public-synthetic-contours.dxf">
       <Link>fixtures\synthetic\public-synthetic-contours.dxf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -112,6 +112,42 @@ public sealed class ACadSharpDxfGeometryExtractorTests
         Assert.Single(contours.Document.OpenSegments);
     }
 
+    [Fact]
+    public async Task ExtractAsync_PublicSyntheticRepairableSegmentsDxf_RepairsSmallGapsIntoValidatedContour()
+    {
+        var extraction = await ExtractFixtureAsync("public-synthetic-repairable-segments.dxf");
+        var geometry = Assert.IsType<CadGeometryDocument>(extraction.Document);
+        var normalization = new CadGeometryNormalizer().Normalize(geometry);
+        var contours = new CadContourBuilder().Build(Assert.IsType<NormalizedCadGeometryDocument>(normalization.Document));
+        var policy = new CadGeometryRepairPolicy(endpointSnapToleranceMeters: 0.002, maximumBridgeGapMeters: 0.02);
+        var plan = new CadGeometryRepairAnalyzer().Analyze(Assert.IsType<CadContourDocument>(contours.Document), policy);
+
+        var repair = new CadGeometryRepairApplier().Apply(contours.Document!, plan, policy);
+
+        Assert.Equal(CadGeometryExtractionStatus.Succeeded, extraction.Status);
+        Assert.Equal(CadGeometryNormalizationStatus.Succeeded, normalization.Status);
+        Assert.Equal(CadGeometryRepairPlanStatus.Ready, plan.Status);
+        Assert.Equal(CadGeometryRepairStatus.Succeeded, repair.Status);
+        Assert.Equal(CadContourValidationState.Valid, Assert.Single(repair.RepairedDocument!.Contours).ValidationState);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_PublicSyntheticRepairConflictsDxf_ReportsBranchConflictWithoutApplyingRepair()
+    {
+        var extraction = await ExtractFixtureAsync("public-synthetic-repair-conflicts.dxf");
+        var geometry = Assert.IsType<CadGeometryDocument>(extraction.Document);
+        var normalization = new CadGeometryNormalizer().Normalize(geometry);
+        var contours = new CadContourBuilder().Build(Assert.IsType<NormalizedCadGeometryDocument>(normalization.Document));
+        var plan = new CadGeometryRepairAnalyzer().Analyze(contours.Document!);
+
+        var repair = new CadGeometryRepairApplier().Apply(contours.Document!, plan);
+
+        Assert.Equal(CadGeometryRepairPlanStatus.HasConflicts, plan.Status);
+        Assert.Equal(CadGeometryRepairStatus.PartiallySucceeded, repair.Status);
+        Assert.Contains(plan.Diagnostics, diagnostic => diagnostic.Code == "REPAIR_CHAIN_BRANCHING_CONFLICT");
+        Assert.Equal(3, repair.OriginalDocument!.OpenSegments.Count);
+    }
+
     private static Task<CadGeometryExtractionResult> ExtractFixtureAsync(string fixtureName)
     {
         var fixturePath = Path.Combine(
