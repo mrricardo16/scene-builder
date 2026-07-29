@@ -148,6 +148,81 @@ public sealed class ACadSharpDxfGeometryExtractorTests
         Assert.Equal(3, repair.OriginalDocument!.OpenSegments.Count);
     }
 
+    [Fact]
+    public async Task ExtractAsync_PublicSyntheticBasicGeometryDxf_ClassifiesContourOpenSegmentAndInsertWithoutMutatingGeometry()
+    {
+        var extraction = await ExtractFixtureAsync("public-synthetic-basic-geometry.dxf");
+        var geometry = Assert.IsType<CadGeometryDocument>(extraction.Document);
+        var normalization = new CadGeometryNormalizer().Normalize(geometry);
+        var normalized = Assert.IsType<NormalizedCadGeometryDocument>(normalization.Document);
+        var contours = new CadContourBuilder().Build(normalized);
+        var ruleSet = new CadRuleSet
+        {
+            ContractVersion = "1.0",
+            Rules =
+            [
+                new CadClassificationRule
+                {
+                    Id = "synthetic-insert",
+                    Enabled = true,
+                    Classification = CadSemanticClassification.StaticFacility,
+                    Match = new CadRuleMatch { Block = "SYN_BLOCK_A", EntityTypes = ["INSERT"] }
+                },
+                new CadClassificationRule
+                {
+                    Id = "synthetic-line",
+                    Enabled = true,
+                    Classification = CadSemanticClassification.Road,
+                    Match = new CadRuleMatch { EntityTypes = ["LINE"] }
+                }
+            ]
+        };
+
+        var result = new CadRuleEngine().Classify(new CadClassificationInput
+        {
+            Summary = geometry.Summary,
+            Geometry = normalized,
+            Contours = Assert.IsType<CadContourDocument>(contours.Document),
+            RuleSet = ruleSet
+        });
+
+        Assert.Equal(CadClassificationStatus.Succeeded, result.Status);
+        Assert.Contains(result.Objects, item => item.Classification == CadSemanticClassification.StaticFacility && item.Subject.Kind == CadClassificationSubjectKind.Insert);
+        Assert.Contains(result.Objects, item => item.Classification == CadSemanticClassification.Road && item.Subject.Kind == CadClassificationSubjectKind.OpenSegment);
+        Assert.Contains(result.Objects, item => item.Subject.Kind == CadClassificationSubjectKind.Contour && item.Classification == CadSemanticClassification.Unclassified && !item.Subject.IsEligibleForClassification);
+        Assert.Same(normalized, Assert.IsType<NormalizedCadGeometryDocument>(normalization.Document));
+    }
+
+    [Fact]
+    public async Task ExtractAsync_PublicSyntheticContoursDxf_ClassifiesAValidContourAsWall()
+    {
+        var extraction = await ExtractFixtureAsync("public-synthetic-contours.dxf");
+        var geometry = Assert.IsType<CadGeometryDocument>(extraction.Document);
+        var normalization = new CadGeometryNormalizer().Normalize(geometry);
+        var normalized = Assert.IsType<NormalizedCadGeometryDocument>(normalization.Document);
+        var contours = new CadContourBuilder().Build(normalized);
+
+        var result = new CadRuleEngine().Classify(new CadClassificationInput
+        {
+            Summary = geometry.Summary,
+            Geometry = normalized,
+            Contours = Assert.IsType<CadContourDocument>(contours.Document),
+            RuleSet = new CadRuleSet
+            {
+                ContractVersion = "1.0",
+                Rules = [new CadClassificationRule
+                {
+                    Id = "synthetic-wall-contour",
+                    Enabled = true,
+                    Classification = CadSemanticClassification.Wall,
+                    Match = new CadRuleMatch { Layer = "SYN_CONTOUR", EntityTypes = ["LWPOLYLINE"] }
+                }]
+            }
+        });
+
+        Assert.Contains(result.Objects, item => item.Subject.Kind == CadClassificationSubjectKind.Contour && item.Classification == CadSemanticClassification.Wall);
+    }
+
     private static Task<CadGeometryExtractionResult> ExtractFixtureAsync(string fixtureName)
     {
         var fixturePath = Path.Combine(

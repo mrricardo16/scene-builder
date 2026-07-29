@@ -26,4 +26,19 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\fixtures\rules\public-synthetic-rules-valid.json">
+      <Link>fixtures\rules\public-synthetic-rules-valid.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\fixtures\rules\public-synthetic-rules-conflict.json">
+      <Link>fixtures\rules\public-synthetic-rules-conflict.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\fixtures\rules\public-synthetic-rules-invalid.json">
+      <Link>fixtures\rules\public-synthetic-rules-invalid.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

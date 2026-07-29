@@ -1,0 +1,21 @@
+{
+  "contractVersion": "1.0",
+  "rules": [
+    {
+      "id": "synthetic-conflict-floor",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_CONFLICT", "block": null, "entityTypes": ["LINE"] },
+      "classification": "floor",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-conflict-wall",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_CONFLICT", "block": null, "entityTypes": ["LINE"] },
+      "classification": "wall",
+      "geometryDefaults": null
+    }
+  ]
+}

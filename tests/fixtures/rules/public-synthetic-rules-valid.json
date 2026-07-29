@@ -1,0 +1,61 @@
+{
+  "contractVersion": "1.0",
+  "rules": [
+    {
+      "id": "synthetic-wall-layer",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_WALL_A", "block": null, "entityTypes": ["LWPOLYLINE"] },
+      "classification": "wall",
+      "geometryDefaults": { "heightMeters": 3.0 }
+    },
+    {
+      "id": "synthetic-floor-layer",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_FLOOR_*", "block": null, "entityTypes": [] },
+      "classification": "floor",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-rack-block",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": null, "block": "SYN_RACK_A", "entityTypes": ["INSERT"] },
+      "classification": "static-facility",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-mobile-block",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": null, "block": "SYN_MOBILE_*", "entityTypes": ["INSERT"] },
+      "classification": "dynamic-equipment",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-road-entity",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": null, "block": null, "entityTypes": ["LINE"] },
+      "classification": "road",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-floor-duplicate",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_FLOOR_*", "block": null, "entityTypes": [] },
+      "classification": "floor",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-disabled-road",
+      "enabled": false,
+      "priority": 999,
+      "match": { "layer": "SYN_ROAD_*", "block": null, "entityTypes": [] },
+      "classification": "road",
+      "geometryDefaults": null
+    }
+  ]
+}
