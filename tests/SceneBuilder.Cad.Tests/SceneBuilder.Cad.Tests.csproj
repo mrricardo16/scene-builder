@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\fixtures\synthetic\public-synthetic-scene-draft.dxf">
+      <Link>fixtures\synthetic\public-synthetic-scene-draft.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <ProjectReference Include="..\..\src\SceneBuilder.Cad\SceneBuilder.Cad.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
     <PackageReference Include="xunit" Version="2.4.2" />

@@ -1,0 +1,53 @@
+{
+  "contractVersion": "1.0",
+  "rules": [
+    {
+      "id": "synthetic-wall",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_WALL", "block": null, "entityTypes": ["LWPOLYLINE"] },
+      "classification": "wall",
+      "geometryDefaults": { "heightMeters": 4.0 }
+    },
+    {
+      "id": "synthetic-floor",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_FLOOR", "block": null, "entityTypes": ["LWPOLYLINE"] },
+      "classification": "floor",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-column",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_COLUMN", "block": null, "entityTypes": ["CIRCLE"] },
+      "classification": "column",
+      "geometryDefaults": { "heightMeters": 5.0 }
+    },
+    {
+      "id": "synthetic-road",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_ROAD", "block": null, "entityTypes": ["LINE"] },
+      "classification": "road",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-static",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_STATIC", "block": "SYN_STATIC_BLOCK", "entityTypes": ["INSERT"] },
+      "classification": "static-facility",
+      "geometryDefaults": null
+    },
+    {
+      "id": "synthetic-dynamic",
+      "enabled": true,
+      "priority": 100,
+      "match": { "layer": "SYN_DYNAMIC", "block": "SYN_DYNAMIC_BLOCK", "entityTypes": ["INSERT"] },
+      "classification": "dynamic-equipment",
+      "geometryDefaults": null
+    }
+  ]
+}

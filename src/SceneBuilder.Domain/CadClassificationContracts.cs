@@ -25,6 +25,15 @@ public enum CadClassificationStatus
     Failed = 2
 }
 
+public static class CadClassificationSubjectIdentity
+{
+    public static string ForInsert(int sourceOrder)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(sourceOrder);
+        return $"insert:{sourceOrder:D6}";
+    }
+}
+
 public sealed record CadRuleGeometryDefaults
 {
     public double? HeightMeters { get; init; }

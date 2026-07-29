@@ -16,7 +16,7 @@
 
 ## 非目标
 
-不创建厂房三维语义对象、SceneNode、SceneDraft、墙体/地面/门窗几何、Blender、GLB、3D Tiles、DWG、ezdxf、Xref、HTTP API、数据库或公开分类报告；不修改 JobReport v0。
+本卡本身不创建厂房三维语义对象、SceneNode、SceneDraft、墙体/地面/门窗几何、Blender、GLB、3D Tiles、DWG、ezdxf、Xref、HTTP API、数据库或公开分类报告；不修改 JobReport v0。SB-09 已在不改变本卡分类含义的前提下消费其内部结果，仍不生成三维模型。
 
 ## 门禁
 

@@ -73,7 +73,7 @@ public sealed class CadClassificationSubjectBuilder
         }));
         subjects.AddRange(input.Geometry.Entities.OfType<CadInsertGeometry>().Select(insert => new CadClassificationSubject
         {
-            Id = $"insert:{insert.SourceOrder:D6}",
+            Id = CadClassificationSubjectIdentity.ForInsert(insert.SourceOrder),
             Kind = CadClassificationSubjectKind.Insert,
             SourceLayer = insert.LayerName,
             SourceEntityType = "INSERT",

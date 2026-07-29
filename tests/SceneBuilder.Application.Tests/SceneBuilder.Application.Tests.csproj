@@ -27,6 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\fixtures\rules\public-synthetic-scene-draft-rules.json">
+      <Link>fixtures\rules\public-synthetic-scene-draft-rules.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\fixtures\rules\public-synthetic-rules-valid.json">
       <Link>fixtures\rules\public-synthetic-rules-valid.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

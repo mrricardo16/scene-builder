@@ -223,6 +223,72 @@ public sealed class ACadSharpDxfGeometryExtractorTests
         Assert.Contains(result.Objects, item => item.Subject.Kind == CadClassificationSubjectKind.Contour && item.Classification == CadSemanticClassification.Wall);
     }
 
+    [Fact]
+    public async Task ExtractAsync_PublicSyntheticSceneDraftDxf_BuildsDeterministicSemanticDraftWithoutExternalProcesses()
+    {
+        var extraction = await ExtractFixtureAsync("public-synthetic-scene-draft.dxf");
+        var geometry = Assert.IsType<CadGeometryDocument>(extraction.Document);
+        var normalization = new CadGeometryNormalizer().Normalize(geometry);
+        var normalized = Assert.IsType<NormalizedCadGeometryDocument>(normalization.Document);
+        var contours = new CadContourBuilder().Build(normalized);
+        var contourDocument = Assert.IsType<CadContourDocument>(contours.Document);
+        var classification = new CadRuleEngine().Classify(new CadClassificationInput
+        {
+            Summary = geometry.Summary,
+            Geometry = normalized,
+            Contours = contourDocument,
+            RuleSet = new CadRuleSet
+            {
+                ContractVersion = "1.0",
+                Rules =
+                [
+                    Rule("synthetic-wall", CadSemanticClassification.Wall, "SYN_WALL", "LWPOLYLINE", heightMeters: 4),
+                    Rule("synthetic-floor", CadSemanticClassification.Floor, "SYN_FLOOR", "LWPOLYLINE"),
+                    Rule("synthetic-column", CadSemanticClassification.Column, "SYN_COLUMN", "CIRCLE", heightMeters: 5),
+                    Rule("synthetic-road", CadSemanticClassification.Road, "SYN_ROAD", "LINE"),
+                    Rule("synthetic-static", CadSemanticClassification.StaticFacility, "SYN_STATIC", "INSERT", "SYN_STATIC_BLOCK"),
+                    Rule("synthetic-dynamic", CadSemanticClassification.DynamicEquipment, "SYN_DYNAMIC", "INSERT", "SYN_DYNAMIC_BLOCK")
+                ]
+            }
+        });
+
+        var first = new SceneDraftBuilder().Build(new SceneDraftBuildRequest
+        {
+            DraftId = "draft:synthetic:cad",
+            SourceDocument = geometry.Summary,
+            Geometry = normalized,
+            Contours = contourDocument,
+            Classification = classification
+        });
+        var second = new SceneDraftBuilder().Build(new SceneDraftBuildRequest
+        {
+            DraftId = "draft:synthetic:cad",
+            SourceDocument = geometry.Summary,
+            Geometry = normalized,
+            Contours = contourDocument,
+            Classification = classification
+        });
+
+        var draft = Assert.IsType<SceneDraft>(first.Draft);
+        Assert.Equal(CadGeometryExtractionStatus.Succeeded, extraction.Status);
+        Assert.Equal(CadGeometryNormalizationStatus.Succeeded, normalization.Status);
+        Assert.Equal(CadContourBuildStatus.Succeeded, contours.Status);
+        Assert.Equal(CadClassificationStatus.Succeeded, classification.Status);
+        Assert.Equal(SceneDraftBuildStatus.Succeeded, first.Status);
+        Assert.Equal(6, draft.SemanticObjects.Count);
+        Assert.Contains(draft.SemanticObjects, semanticObject => semanticObject is CadWallObject);
+        Assert.Contains(draft.SemanticObjects, semanticObject => semanticObject is CadFloorObject);
+        Assert.Contains(draft.SemanticObjects, semanticObject => semanticObject is CadColumnObject);
+        Assert.Contains(draft.SemanticObjects, semanticObject => semanticObject is CadRoadObject);
+        Assert.Contains(draft.SemanticObjects, semanticObject => semanticObject is CadStaticFacilityObject);
+        Assert.Contains(draft.SemanticObjects, semanticObject => semanticObject is CadDynamicEquipmentObject);
+        Assert.Equal(6, draft.Nodes.Count);
+        Assert.Equal(new CadPoint3(0.05, 0, 0), Assert.IsType<CadStaticFacilityObject>(draft.SemanticObjects.Single(item => item is CadStaticFacilityObject)).Position);
+        Assert.DoesNotContain(draft.SemanticObjects, semanticObject => semanticObject.SourceSubjectId == "segment:000006:000000");
+        Assert.Equal(draft.SemanticObjects, Assert.IsType<SceneDraft>(second.Draft).SemanticObjects);
+        Assert.Equal(draft.Nodes, Assert.IsType<SceneDraft>(second.Draft).Nodes);
+    }
+
     private static Task<CadGeometryExtractionResult> ExtractFixtureAsync(string fixtureName)
     {
         var fixturePath = Path.Combine(
@@ -239,4 +305,21 @@ public sealed class ACadSharpDxfGeometryExtractorTests
             },
             CancellationToken.None);
     }
+
+    private static CadClassificationRule Rule(
+        string id,
+        CadSemanticClassification classification,
+        string layer,
+        string entityType,
+        string? block = null,
+        double? heightMeters = null) =>
+        new()
+        {
+            Id = id,
+            Enabled = true,
+            Priority = 100,
+            Classification = classification,
+            Match = new CadRuleMatch { Layer = layer, Block = block, EntityTypes = [entityType] },
+            GeometryDefaults = heightMeters is null ? null : new CadRuleGeometryDefaults { HeightMeters = heightMeters }
+        };
 }

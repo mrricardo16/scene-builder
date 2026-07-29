@@ -227,6 +227,20 @@ public sealed record SceneNode
     public CadBounds Bounds { get; init; } = CadBounds.NotEvaluated;
 
     public IReadOnlyList<string> SourceLayers { get; init; } = Array.Empty<string>();
+
+    public string SemanticObjectId { get; init; } = string.Empty;
+
+    public CadSemanticClassification Classification { get; init; } = CadSemanticClassification.Unclassified;
+
+    public SceneNodeContentKind ContentKind { get; init; } = SceneNodeContentKind.ProceduralStaticGeometry;
+
+    public string SourceSubjectId { get; init; } = string.Empty;
+
+    public CadClassificationSubjectKind SourceSubjectKind { get; init; }
+
+    public CadRuleGeometryDefaults? GeometryDefaults { get; init; }
+
+    public SceneNodeTransform? Transform { get; init; }
 }
 
 public sealed record SceneDraft
@@ -236,6 +250,8 @@ public sealed record SceneDraft
     public CadDocumentModel SourceDocument { get; init; } = new();
 
     public IReadOnlyList<SceneNode> Nodes { get; init; } = Array.Empty<SceneNode>();
+
+    public IReadOnlyList<CadSemanticObject> SemanticObjects { get; init; } = Array.Empty<CadSemanticObject>();
 
     public IReadOnlyList<SceneDiagnostic> Diagnostics { get; init; } = Array.Empty<SceneDiagnostic>();
 }

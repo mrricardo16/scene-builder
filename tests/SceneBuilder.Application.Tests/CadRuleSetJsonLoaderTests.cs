@@ -5,6 +5,28 @@ namespace SceneBuilder.Application.Tests;
 public sealed class CadRuleSetJsonLoaderTests
 {
     [Fact]
+    public void Load_PublicSyntheticSceneDraftRules_MapsAllSupportedSemanticClassifications()
+    {
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "rules", "public-synthetic-scene-draft-rules.json"));
+
+        var result = new CadRuleSetJsonLoader().Load(json);
+
+        var ruleSet = Assert.IsType<CadRuleSet>(result.RuleSet);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(6, ruleSet.Rules.Count);
+        Assert.Equal(
+            [
+                CadSemanticClassification.Wall,
+                CadSemanticClassification.Floor,
+                CadSemanticClassification.Column,
+                CadSemanticClassification.Road,
+                CadSemanticClassification.StaticFacility,
+                CadSemanticClassification.DynamicEquipment
+            ],
+            ruleSet.Rules.Select(rule => rule.Classification));
+    }
+
+    [Fact]
     public void Load_valid_fixture_maps_frozen_text_and_normalizes_entity_types()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "fixtures", "rules", "public-synthetic-rules-valid.json");
