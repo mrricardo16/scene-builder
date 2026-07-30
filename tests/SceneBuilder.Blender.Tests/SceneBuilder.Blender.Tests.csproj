@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\src\SceneBuilder.Blender\SceneBuilder.Blender.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Application\SceneBuilder.Application.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Domain\SceneBuilder.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SceneBuilder.Pipeline\SceneBuilder.Pipeline.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">

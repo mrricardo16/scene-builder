@@ -2,10 +2,14 @@ using System.Diagnostics;
 using SceneBuilder.Application;
 using SceneBuilder.Blender;
 using SceneBuilder.Domain;
+using SceneBuilder.Pipeline;
 
-var blenderPath = args.Length == 2 && string.Equals(args[0], "--blender", StringComparison.Ordinal)
-    ? args[1]
-    : @"D:\tool\Blender\blender.exe";
+var blenderPath = ArgumentValue(args, "--blender") ?? @"D:\tool\Blender\blender.exe";
+var mode = ArgumentValue(args, "--mode") ?? "scene";
+if (mode is not ("scene" or "package"))
+{
+    throw new ArgumentException("The --mode value must be scene or package.");
+}
 var temporaryDirectory = Path.Combine(Path.GetTempPath(), "scene-builder-smoke-" + Guid.NewGuid().ToString("N"));
 var cleaned = false;
 
@@ -41,7 +45,20 @@ try
     }
 
     var staticFacility = Facility("smoke-static", "insert-static", "STATIC_SMOKE", CadSemanticClassification.StaticFacility);
-    var dynamicEquipment = Facility("smoke-dynamic", "insert-dynamic", "DYNAMIC_SMOKE", CadSemanticClassification.DynamicEquipment);
+    var dynamicEquipment = Facility(
+        "smoke-dynamic",
+        "insert-dynamic",
+        "DYNAMIC_SMOKE",
+        CadSemanticClassification.DynamicEquipment,
+        CadBounds.Computed(101, 1, 0, 102, 2, 1),
+        new CadPoint3(101, 1, 0));
+    var globalFacility = Facility(
+        "smoke-global",
+        "insert-global",
+        "GLOBAL_SMOKE",
+        CadSemanticClassification.StaticFacility,
+        CadBounds.Computed(0, 0, 0, 500, 500, 1),
+        new CadPoint3(0, 0, 0));
     var draft = new SceneDraft
     {
         Id = "smoke-draft",
@@ -69,18 +86,48 @@ try
             Bindings =
             [
                 new CadAssetBinding { Id = "static", Enabled = true, Priority = 0, Kind = CadAssetKind.StaticFacility, Selector = new CadAssetBindingSelector { SemanticObjectId = staticFacility.Id }, AssetId = "smoke-static" },
-                new CadAssetBinding { Id = "dynamic", Enabled = true, Priority = 0, Kind = CadAssetKind.DynamicEquipment, Selector = new CadAssetBindingSelector { SemanticObjectId = dynamicEquipment.Id }, AssetId = "smoke-dynamic" }
+                new CadAssetBinding { Id = "dynamic", Enabled = true, Priority = 0, Kind = CadAssetKind.DynamicEquipment, Selector = new CadAssetBindingSelector { SemanticObjectId = dynamicEquipment.Id }, AssetId = "smoke-dynamic" },
+                new CadAssetBinding { Id = "global", Enabled = true, Priority = 0, Kind = CadAssetKind.StaticFacility, Selector = new CadAssetBindingSelector { SemanticObjectId = globalFacility.Id }, AssetId = "smoke-static" }
             ]
         }
     };
+    var toolOptions = new BlenderToolOptions { ExecutablePath = blenderPath, Timeout = TimeSpan.FromMinutes(10), MaximumProcessOutputCharacters = 16_384 };
+    var assetGeneration = new BlenderAssetGenerationContext { AssetRootDirectory = sourceRoot, Configuration = configuration };
+    if (mode is "package")
+    {
+        var packageDraft = new SceneDraft
+        {
+            Id = "smoke-package-draft",
+            SemanticObjects = [staticFacility, dynamicEquipment, globalFacility],
+            Nodes = [Node(staticFacility, SceneNodeContentKind.StaticAssetReference), Node(dynamicEquipment, SceneNodeContentKind.DynamicAssetReference), Node(globalFacility, SceneNodeContentKind.StaticAssetReference)]
+        };
+        var packageResult = await new ScenePackageGenerator(new BlenderSceneGenerator()).GenerateAsync(new ScenePackageGenerationRequest
+        {
+            Draft = packageDraft,
+            PartitionPolicy = new ScenePartitionPolicy { MaximumIntersectedCellsPerObject = 2 },
+            OutputRootDirectory = Path.Combine(temporaryDirectory, "packages"),
+            PackageName = "smoke-package",
+            BlenderTool = toolOptions,
+            AssetGeneration = assetGeneration
+        }, CancellationToken.None);
+        if (packageResult.Status is not ScenePackageGenerationStatus.Succeeded || packageResult.PackagePath is null || packageResult.Index is null || packageResult.Index.Partitions.Count != 3 || packageResult.Index.Partitions.Any(partition => partition.ArtifactPath is null))
+        {
+            throw new InvalidOperationException($"Scene package generation or validation failed: {packageResult.Status}; {string.Join(',', packageResult.Diagnostics.Select(diagnostic => diagnostic.Code))}");
+        }
+
+        Console.WriteLine("Scene package generation: passed (2 regular + 1 global)");
+        Console.WriteLine("Package GLB validation: passed (3)");
+        return;
+    }
+
     var result = await new BlenderSceneGenerator().GenerateAsync(new BlenderGenerationRequest
     {
         Draft = draft,
         OutputDirectory = Path.Combine(temporaryDirectory, "output"),
         OutputFileName = "scene.glb",
         AllowOverwrite = false,
-        Tool = new BlenderToolOptions { ExecutablePath = blenderPath, Timeout = TimeSpan.FromMinutes(10), MaximumProcessOutputCharacters = 16_384 },
-        AssetGeneration = new BlenderAssetGenerationContext { AssetRootDirectory = sourceRoot, Configuration = configuration }
+        Tool = toolOptions,
+        AssetGeneration = assetGeneration
     }, CancellationToken.None);
     if (result.Status is not BlenderGenerationStatus.Succeeded || result.ArtifactPath is null || !validator.Validate(result.ArtifactPath).IsValid)
     {
@@ -103,10 +150,10 @@ finally
     Console.WriteLine($"Temporary cleanup: {(cleaned ? "passed" : "not-needed")}");
 }
 
-static CadSemanticObject Facility(string id, string insertId, string block, CadSemanticClassification classification) => classification switch
+static CadSemanticObject Facility(string id, string insertId, string block, CadSemanticClassification classification, CadBounds? bounds = null, CadPoint3? position = null) => classification switch
 {
-    CadSemanticClassification.StaticFacility => new CadStaticFacilityObject(id, insertId, CadBounds.Computed(0, 0, 0, 1, 1, 1), null, block, new CadPoint3(1, 2, 3), 15, CadScale3.Identity),
-    CadSemanticClassification.DynamicEquipment => new CadDynamicEquipmentObject(id, insertId, CadBounds.Computed(0, 0, 0, 1, 1, 1), null, block, new CadPoint3(4, 5, 6), 30, CadScale3.Identity),
+    CadSemanticClassification.StaticFacility => new CadStaticFacilityObject(id, insertId, bounds ?? CadBounds.Computed(0, 0, 0, 1, 1, 1), null, block, position ?? new CadPoint3(1, 2, 3), 15, CadScale3.Identity),
+    CadSemanticClassification.DynamicEquipment => new CadDynamicEquipmentObject(id, insertId, bounds ?? CadBounds.Computed(0, 0, 0, 1, 1, 1), null, block, position ?? new CadPoint3(4, 5, 6), 30, CadScale3.Identity),
     _ => throw new ArgumentOutOfRangeException(nameof(classification))
 };
 
@@ -147,6 +194,12 @@ static async Task<ProcessResult> RunBlenderAsync(string blenderPath, IReadOnlyLi
     var standardError = await process.StandardError.ReadToEndAsync();
     await process.WaitForExitAsync();
     return new ProcessResult(process.ExitCode, standardOutput, standardError);
+}
+
+static string? ArgumentValue(IReadOnlyList<string> arguments, string name)
+{
+    var index = Array.FindIndex(arguments.ToArray(), argument => string.Equals(argument, name, StringComparison.Ordinal));
+    return index >= 0 && index + 1 < arguments.Count ? arguments[index + 1] : null;
 }
 
 internal sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);

@@ -35,3 +35,7 @@ Manifest 升级为内部 `2.0`，保留 SB-10 的程序化对象，并增加资�
 ## 验证
 
 测试覆盖严格 JSON、通配符、冲突、类别、路径穿越/reparse point、源 GLB 校验、暂存去重、Manifest 脱敏与确定性、Fake Blender 端到端。SmokeTest 使用 .NET 8 生成临时合成资产，调用真实 Adapter/Blender，并以真实 `BinaryGlbValidator` 校验最终 GLB。它只输出版本、计数与状态，不输出资产根、Block 或 Manifest。
+
+## SB-11B 衔接
+
+SB-11B 在本任务之外消费既有 `IBlenderSceneGenerator` 与 `BlenderAssetGenerationContext`：每个分区独立生成，仍沿用相同的显式 Binding、受控资产读取和匿名工作区暂存。资产 Catalog、Binding、源 GLB 和 SceneDraft 均不会因分区而被重写；分区失败也不会回退为按 Block 文件名猜测资产。

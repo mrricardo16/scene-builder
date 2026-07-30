@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SceneBuilder.Application\SceneBuilder.Application.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Blender\SceneBuilder.Blender.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Domain\SceneBuilder.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
