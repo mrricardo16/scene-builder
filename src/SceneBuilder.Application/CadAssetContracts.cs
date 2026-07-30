@@ -20,6 +20,13 @@ public sealed record CadAssetCatalog
     public IReadOnlyList<CadAssetDefinition> Assets { get; init; } = Array.Empty<CadAssetDefinition>();
 }
 
+public sealed record CadAssetConfiguration
+{
+    public CadAssetCatalog Catalog { get; init; } = new();
+
+    public CadAssetBindingSet Bindings { get; init; } = new();
+}
+
 public sealed record CadAssetDefinition
 {
     public string AssetId { get; init; } = string.Empty;

@@ -59,8 +59,8 @@ internal sealed class WindowsSuspendedProcess : IDisposable
 
         CloseHandle(outputWrite);
         CloseHandle(errorWrite);
-        var output = new StreamReader(new FileStream(new SafeFileHandle(outputRead, true), FileAccess.Read, 4096, true), Encoding.UTF8, true);
-        var error = new StreamReader(new FileStream(new SafeFileHandle(errorRead, true), FileAccess.Read, 4096, true), Encoding.UTF8, true);
+        var output = new StreamReader(new FileStream(new SafeFileHandle(outputRead, true), FileAccess.Read, 4096, false), Encoding.UTF8, true);
+        var error = new StreamReader(new FileStream(new SafeFileHandle(errorRead, true), FileAccess.Read, 4096, false), Encoding.UTF8, true);
         return new WindowsSuspendedProcess(information.Process, information.Thread, checked((int)information.ProcessId), output, error);
     }
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SceneBuilder.Application;
 using SceneBuilder.Domain;
 
 namespace SceneBuilder.Blender;
@@ -80,6 +81,88 @@ internal sealed class BlenderManifestMapper
         return new BlenderManifestMappingResult(manifest, skippedObjectIds.OrderBy(id => id, StringComparer.Ordinal).ToArray(), SortDiagnostics(diagnostics));
     }
 
+    public BlenderManifestMappingResult MapAssets(
+        SceneDraft draft,
+        IReadOnlyList<CadAssetResolution> resolutions,
+        IReadOnlyList<StagedBlenderAsset> stagedAssets,
+        MissingAssetBehavior missingAssetBehavior)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentNullException.ThrowIfNull(resolutions);
+        ArgumentNullException.ThrowIfNull(stagedAssets);
+        if (string.IsNullOrWhiteSpace(draft.Id) || HasDuplicates(draft.SemanticObjects.Select(item => item.Id)) || HasDuplicates(draft.Nodes.Select(item => item.SemanticObjectId)))
+        {
+            return BlenderManifestMappingResult.Failed("BLENDER_MANIFEST_INVALID", "The SceneDraft cannot be mapped to a Blender manifest.");
+        }
+
+        var nodes = draft.Nodes.ToDictionary(node => node.SemanticObjectId, StringComparer.Ordinal);
+        var resolutionsById = resolutions.ToDictionary(resolution => resolution.SemanticObjectId, StringComparer.Ordinal);
+        var stagedByAssetId = stagedAssets.ToDictionary(asset => asset.AssetId, StringComparer.Ordinal);
+        var objects = new List<BlenderManifestObject>();
+        var skipped = new List<string>();
+        var diagnostics = new List<SceneDiagnostic>();
+
+        foreach (var semanticObject in draft.SemanticObjects.OrderBy(item => item.Id, StringComparer.Ordinal))
+        {
+            if (!nodes.TryGetValue(semanticObject.Id, out var node) || node.Classification != semanticObject.Classification || semanticObject.Bounds.State is not CadBoundsState.Computed)
+            {
+                Skip(semanticObject.Id, "BLENDER_MANIFEST_INVALID", "A SceneDraft object is not suitable for Blender generation.", skipped, diagnostics);
+                continue;
+            }
+
+            if (node.ContentKind is SceneNodeContentKind.ProceduralStaticGeometry)
+            {
+                AddProceduralObject(semanticObject, objects, skipped, diagnostics);
+                continue;
+            }
+
+            var expectedKind = node.ContentKind is SceneNodeContentKind.StaticAssetReference ? CadAssetKind.StaticFacility : CadAssetKind.DynamicEquipment;
+            if (!IsMatchingAssetObject(semanticObject, expectedKind) || node.Transform is null || !resolutionsById.TryGetValue(semanticObject.Id, out var resolution))
+            {
+                Skip(semanticObject.Id, "BLENDER_MANIFEST_INVALID", "A SceneDraft asset object is not suitable for Blender generation.", skipped, diagnostics);
+                continue;
+            }
+
+            if (resolution.Status is CadAssetResolutionStatus.Resolved && resolution.Asset is not null && stagedByAssetId.TryGetValue(resolution.Asset.AssetId, out var stagedAsset))
+            {
+                objects.Add(CreateAssetObject(semanticObject.Id, expectedKind, stagedAsset.ManifestRelativePath, node.Transform));
+                continue;
+            }
+
+            if (missingAssetBehavior is MissingAssetBehavior.Fail)
+            {
+                diagnostics.Add(Diagnostic("BLENDER_ASSET_REQUIRED", DiagnosticSeverity.Error, "An asset object could not be resolved to a usable staged asset."));
+                continue;
+            }
+
+            if (missingAssetBehavior is MissingAssetBehavior.Placeholder && TryCreatePlaceholder(semanticObject, node.Transform, expectedKind, out var placeholder))
+            {
+                objects.Add(placeholder);
+                continue;
+            }
+
+            Skip(semanticObject.Id, "BLENDER_ASSET_SKIPPED", "An asset object has no usable staged asset.", skipped, diagnostics);
+        }
+
+        if (diagnostics.Any(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error) || objects.Count == 0)
+        {
+            if (objects.Count == 0)
+            {
+                diagnostics.Add(Diagnostic("BLENDER_MANIFEST_INVALID", DiagnosticSeverity.Error, "The SceneDraft has no Blender objects to generate."));
+            }
+
+            return new BlenderManifestMappingResult(null, skipped.OrderBy(id => id, StringComparer.Ordinal).ToArray(), SortDiagnostics(diagnostics));
+        }
+
+        return new BlenderManifestMappingResult(new BlenderManifest
+        {
+            ContractVersion = "2.0",
+            Unit = "meters",
+            DraftId = draft.Id,
+            Objects = objects.OrderBy(item => item.Id, StringComparer.Ordinal).ToArray()
+        }, skipped.OrderBy(id => id, StringComparer.Ordinal).ToArray(), SortDiagnostics(diagnostics));
+    }
+
     public static string Serialize(BlenderManifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
@@ -94,6 +177,70 @@ internal sealed class BlenderManifestMapper
             Profile = BlenderProfileTessellator.Tessellate(profile, ArcMaximumStepDegrees),
             HeightMeters = heightMeters
         };
+
+    private static void AddProceduralObject(CadSemanticObject semanticObject, ICollection<BlenderManifestObject> objects, ICollection<string> skippedObjectIds, ICollection<SceneDiagnostic> diagnostics)
+    {
+        switch (semanticObject)
+        {
+            case CadWallObject { GeometryKind: CadWallGeometryKind.ClosedProfile, Profile: not null, HeightMeters: > 0 } wall:
+                objects.Add(CreateProfileObject(wall.Id, "wall", wall.Profile, wall.HeightMeters.Value));
+                break;
+            case CadFloorObject floor:
+                objects.Add(CreateProfileObject(floor.Id, "floor", floor.Profile, null));
+                break;
+            case CadColumnObject { HeightMeters: > 0 } column:
+                objects.Add(CreateProfileObject(column.Id, "column", column.Profile, column.HeightMeters.Value));
+                break;
+            case CadRoadObject { GeometryKind: CadRoadGeometryKind.Area, Area: not null } road:
+                objects.Add(CreateProfileObject(road.Id, "road", road.Area, null));
+                break;
+            case CadWallObject { GeometryKind: CadWallGeometryKind.Baseline }:
+            case CadRoadObject { GeometryKind: CadRoadGeometryKind.Centerline }:
+                Skip(semanticObject.Id, "BLENDER_OBJECT_UNSUPPORTED", "A SceneDraft object is outside the Blender geometry scope.", skippedObjectIds, diagnostics);
+                break;
+            default:
+                Skip(semanticObject.Id, "BLENDER_GEOMETRY_PARAMETER_MISSING", "A procedural object has no usable configured geometry.", skippedObjectIds, diagnostics);
+                break;
+        }
+    }
+
+    private static bool IsMatchingAssetObject(CadSemanticObject semanticObject, CadAssetKind kind) =>
+        (kind is CadAssetKind.StaticFacility && semanticObject is CadStaticFacilityObject) ||
+        (kind is CadAssetKind.DynamicEquipment && semanticObject is CadDynamicEquipmentObject);
+
+    private static BlenderManifestObject CreateAssetObject(string id, CadAssetKind kind, string assetFile, SceneNodeTransform transform) => new()
+    {
+        Id = id,
+        Kind = kind is CadAssetKind.StaticFacility ? "static-asset" : "dynamic-asset",
+        AssetFile = assetFile,
+        Position = ToPoint(transform.Position),
+        RotationDegrees = transform.RotationDegrees,
+        Scale = new BlenderManifestPoint { X = transform.Scale.X, Y = transform.Scale.Y, Z = transform.Scale.Z }
+    };
+
+    private static bool TryCreatePlaceholder(CadSemanticObject semanticObject, SceneNodeTransform transform, CadAssetKind kind, out BlenderManifestObject placeholder)
+    {
+        var bounds = semanticObject.Bounds;
+        var size = new BlenderManifestPoint { X = bounds.MaxX - bounds.MinX, Y = bounds.MaxY - bounds.MinY, Z = bounds.MaxZ - bounds.MinZ };
+        if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
+        {
+            placeholder = new BlenderManifestObject();
+            return false;
+        }
+
+        placeholder = new BlenderManifestObject
+        {
+            Id = semanticObject.Id,
+            Kind = kind is CadAssetKind.StaticFacility ? "static-placeholder" : "dynamic-placeholder",
+            Position = ToPoint(transform.Position),
+            RotationDegrees = transform.RotationDegrees,
+            Scale = new BlenderManifestPoint { X = transform.Scale.X, Y = transform.Scale.Y, Z = transform.Scale.Z },
+            PlaceholderSize = size
+        };
+        return true;
+    }
+
+    private static BlenderManifestPoint ToPoint(CadPoint3 point) => new() { X = point.X, Y = point.Y, Z = point.Z };
 
     private static bool HasDuplicates(IEnumerable<string> identifiers) =>
         identifiers.GroupBy(identifier => identifier, StringComparer.Ordinal).Any(group => group.Count() > 1);
@@ -151,6 +298,26 @@ internal sealed record BlenderManifestObject
     [JsonPropertyName("heightMeters")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public double? HeightMeters { get; init; }
+
+    [JsonPropertyName("assetFile")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AssetFile { get; init; }
+
+    [JsonPropertyName("position")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public BlenderManifestPoint? Position { get; init; }
+
+    [JsonPropertyName("rotationDegrees")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? RotationDegrees { get; init; }
+
+    [JsonPropertyName("scale")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public BlenderManifestPoint? Scale { get; init; }
+
+    [JsonPropertyName("placeholderSize")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public BlenderManifestPoint? PlaceholderSize { get; init; }
 }
 
 internal sealed record BlenderManifestPoint

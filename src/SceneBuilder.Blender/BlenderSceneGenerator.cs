@@ -9,17 +9,26 @@ public sealed class BlenderSceneGenerator : IBlenderSceneGenerator
     private readonly IBlenderProcessRunner _processRunner;
     private readonly BlenderManifestMapper _mapper;
     private readonly BinaryGlbValidator _validator;
+    private readonly CadAssetBindingResolver _assetBindingResolver;
+    private readonly BlenderAssetStager _assetStager;
 
     public BlenderSceneGenerator(IBlenderProcessRunner? processRunner = null)
         : this(processRunner, null, null)
     {
     }
 
-    internal BlenderSceneGenerator(IBlenderProcessRunner? processRunner, BlenderManifestMapper? mapper, BinaryGlbValidator? validator)
+    internal BlenderSceneGenerator(
+        IBlenderProcessRunner? processRunner,
+        BlenderManifestMapper? mapper,
+        BinaryGlbValidator? validator,
+        CadAssetBindingResolver? assetBindingResolver = null,
+        BlenderAssetStager? assetStager = null)
     {
         _processRunner = processRunner ?? new BlenderProcessRunner();
         _mapper = mapper ?? new BlenderManifestMapper();
         _validator = validator ?? new BinaryGlbValidator();
+        _assetBindingResolver = assetBindingResolver ?? new CadAssetBindingResolver();
+        _assetStager = assetStager ?? new BlenderAssetStager();
     }
 
     public async Task<BlenderGenerationResult> GenerateAsync(BlenderGenerationRequest request, CancellationToken cancellationToken)
@@ -30,8 +39,10 @@ public sealed class BlenderSceneGenerator : IBlenderSceneGenerator
             return Failed("BLENDER_REQUEST_INVALID");
         }
 
-        var mapping = _mapper.Map(request.Draft);
-        if (!mapping.IsValid)
+        var mapping = request.AssetGeneration is null
+            ? _mapper.Map(request.Draft)
+            : new BlenderManifestMappingResult(null, Array.Empty<string>(), Array.Empty<SceneDiagnostic>());
+        if (request.AssetGeneration is null && !mapping.IsValid)
         {
             return CreateResult(BlenderGenerationStatus.Failed, null, 0, mapping, mapping.Diagnostics);
         }
@@ -58,9 +69,31 @@ public sealed class BlenderSceneGenerator : IBlenderSceneGenerator
 
             workDirectory = Path.Combine(request.OutputDirectory, ".scene-builder-staging", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workDirectory);
+            if (request.AssetGeneration is not null)
+            {
+                var resolutions = _assetBindingResolver.Resolve(request.Draft.SemanticObjects, request.AssetGeneration.Configuration);
+                var staging = _assetStager.Stage(resolutions.Resolutions, request.AssetGeneration.AssetRootDirectory, workDirectory);
+                if (!staging.IsSuccess)
+                {
+                    return Failed(staging.DiagnosticCode!);
+                }
+
+                mapping = _mapper.MapAssets(
+                    request.Draft,
+                    resolutions.Resolutions,
+                    staging.Assets,
+                    request.AssetGeneration.Policy.MissingAssetBehavior);
+                if (!mapping.IsValid)
+                {
+                    return CreateResult(BlenderGenerationStatus.Failed, null, 0, mapping, resolutions.Diagnostics.Concat(mapping.Diagnostics).ToArray());
+                }
+
+                mapping = mapping with { Diagnostics = resolutions.Diagnostics.Concat(mapping.Diagnostics).Distinct().OrderBy(item => item.Code, StringComparer.Ordinal).ToArray() };
+            }
+
             var manifestPath = Path.Combine(workDirectory, "manifest.json");
             var stagingPath = Path.Combine(workDirectory, "scene.glb");
-            await File.WriteAllTextAsync(manifestPath, BlenderManifestMapper.Serialize(mapping.Manifest!), cancellationToken);
+            await File.WriteAllTextAsync(manifestPath, BlenderManifestMapper.Serialize(mapping!.Manifest!), cancellationToken);
             var process = await _processRunner.RunAsync(
                 BlenderCommandBuilder.Create(request.Tool.ExecutablePath, scriptPath, manifestPath, stagingPath, workDirectory, request.Tool.Timeout, request.Tool.MaximumProcessOutputCharacters),
                 cancellationToken);
@@ -119,7 +152,8 @@ public sealed class BlenderSceneGenerator : IBlenderSceneGenerator
     private static bool TryValidateRequest(BlenderGenerationRequest request, out string outputPath)
     {
         outputPath = string.Empty;
-        if (request.Draft is null || request.Tool is null || string.IsNullOrWhiteSpace(request.OutputDirectory) || string.IsNullOrWhiteSpace(request.Tool.ExecutablePath) || request.Tool.Timeout <= TimeSpan.Zero || request.Tool.MaximumProcessOutputCharacters <= 0 || !IsSafeOutputFileName(request.OutputFileName))
+        if (request.Draft is null || request.Tool is null || string.IsNullOrWhiteSpace(request.OutputDirectory) || string.IsNullOrWhiteSpace(request.Tool.ExecutablePath) || request.Tool.Timeout <= TimeSpan.Zero || request.Tool.MaximumProcessOutputCharacters <= 0 || !IsSafeOutputFileName(request.OutputFileName) ||
+            (request.AssetGeneration is not null && string.IsNullOrWhiteSpace(request.AssetGeneration.AssetRootDirectory)))
         {
             return false;
         }

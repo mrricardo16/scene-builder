@@ -31,6 +31,17 @@ public sealed record BlenderGenerationRequest
     public string OutputFileName { get; init; } = string.Empty;
 
     public bool AllowOverwrite { get; init; }
+
+    public BlenderAssetGenerationContext? AssetGeneration { get; init; }
+}
+
+public sealed record BlenderAssetGenerationContext
+{
+    public string AssetRootDirectory { get; init; } = string.Empty;
+
+    public CadAssetConfiguration Configuration { get; init; } = new();
+
+    public BlenderAssetGenerationPolicy Policy { get; init; } = new();
 }
 
 public sealed record BlenderGenerationResult

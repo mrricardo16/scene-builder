@@ -18,6 +18,16 @@ Blender Adapter 接收调用方明确提供的 AssetRootDirectory。资产路径
 
 每个实际使用的 AssetId 只预校验和复制一次。源 GLB 由现有 `BinaryGlbValidator` 只读校验；通过后复制到 Blender 工作目录的 `assets/<ordinal>-<assetId>.glb`，Manifest 仅保存该工作区安全相对路径。源资产和 SceneDraft 都不修改。
 
+## Windows 句柄级资产安全边界
+
+早期“检查完整路径的目录属性，再按字符串路径打开或复制”存在 TOCTOU：检查时目录安全，不等于随后目录段没有被替换为 Junction 或符号链接。重复 `GetFullPath`、`GetAttributes` 或缩短时间窗口都不能消除外部进程的替换竞争。
+
+Windows 资产读取改为 Fail Closed 的句柄链：根目录先以 `CreateFileW` 的 `FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT` 打开；之后每个路径段均通过 `NtCreateFile` 和上一层目录句柄的 `OBJECT_ATTRIBUTES.RootDirectory` 相对打开。每段均采用 `FILE_OPEN_REPARSE_POINT`，并从句柄查询 `FileAttributeTagInfo`，任何 Reparse Point 都以 `ASSET_REPARSE_POINT_REJECTED` 拒绝。目录句柄与最终文件句柄均不共享删除权限，因此读取期间不能被按路径替换。
+
+最终 `SafeFileHandle` 的所有权转移给 `SecureAssetFile`；父目录句柄在遍历结束时释放。Validator 通过该同一文件句柄创建的可定位流校验，并恢复流位置；Stager 从同一流复制到受控工作区临时文件，校验临时副本后才原子发布匿名 GLB。资产安全链不会以源路径重新打开、复制或读取。非 Windows 返回 `ASSET_SECURE_OPEN_UNSUPPORTED`，不提供不安全回退。
+
+测试包括句柄持有时的重命名拒绝、原生 API 替身的重解析点拒绝、流验证的所有权/位置保持和资产暂存回归；真实 Blender SmokeTest 继续验证端到端导入。
+
 ## Manifest 与 Blender
 
 Manifest 升级为内部 `2.0`，保留 SB-10 的程序化对象，并增加资产实例：稳定实例 ID、资产工作区相对路径、类别和 SceneDraft Transform。Python 只接收 Manifest 引用的工作区相对路径；不扫描资产目录。它使用 `bpy.ops.import_scene.gltf`，追踪新增对象，创建稳定 Empty 父节点，应用位置/绕 Z 轴旋转/缩放，并将静态、动态资产放入不同 Collection。缺失映射、缺文件或无效 GLB 按 `Skip`、`Placeholder`、`Fail` 策略处理；Placeholder 为明确标记的简单几何，不伪装成导入资产。

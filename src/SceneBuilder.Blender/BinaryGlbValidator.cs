@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace SceneBuilder.Blender;
 
-internal sealed class BinaryGlbValidator
+public sealed class BinaryGlbValidator
 {
     private const uint GlbMagic = 0x46546C67;
     private const uint JsonChunkType = 0x4E4F534A;
@@ -16,8 +16,73 @@ internal sealed class BinaryGlbValidator
             return GlbValidationResult.Failed("BLENDER_OUTPUT_MISSING");
         }
 
-        var bytes = File.ReadAllBytes(path);
-        if (bytes.Length < 20 || bytes.Length % 4 != 0 || BinaryPrimitives.ReadUInt32LittleEndian(bytes) != GlbMagic || BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(4)) != 2 || BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(8)) != bytes.Length)
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
+            return Validate(stream, leaveOpen: true);
+        }
+        catch (IOException)
+        {
+            return GlbValidationResult.Failed("BLENDER_OUTPUT_MISSING");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return GlbValidationResult.Failed("BLENDER_OUTPUT_MISSING");
+        }
+    }
+
+    public GlbValidationResult Validate(Stream stream, bool leaveOpen = true)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        if (!stream.CanRead || !stream.CanSeek)
+        {
+            return GlbValidationResult.Failed("BLENDER_OUTPUT_INVALID");
+        }
+
+        var initialPosition = stream.Position;
+        try
+        {
+            stream.Position = 0;
+            if (stream.Length < 20 || stream.Length > int.MaxValue || stream.Length % 4 != 0)
+            {
+                return GlbValidationResult.Failed("BLENDER_OUTPUT_INVALID");
+            }
+
+            var bytes = new byte[checked((int)stream.Length)];
+            var read = 0;
+            while (read < bytes.Length)
+            {
+                var count = stream.Read(bytes, read, bytes.Length - read);
+                if (count == 0)
+                {
+                    return GlbValidationResult.Failed("BLENDER_OUTPUT_INVALID");
+                }
+
+                read += count;
+            }
+
+            return ValidateBytes(bytes);
+        }
+        catch (IOException)
+        {
+            return GlbValidationResult.Failed("BLENDER_OUTPUT_INVALID");
+        }
+        finally
+        {
+            if (leaveOpen)
+            {
+                stream.Position = initialPosition;
+            }
+            else
+            {
+                stream.Dispose();
+            }
+        }
+    }
+
+    private static GlbValidationResult ValidateBytes(byte[] bytes)
+    {
+        if (BinaryPrimitives.ReadUInt32LittleEndian(bytes) != GlbMagic || BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(4)) != 2 || BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(8)) != bytes.Length)
         {
             return GlbValidationResult.Failed("BLENDER_OUTPUT_INVALID");
         }
@@ -75,7 +140,7 @@ internal sealed class BinaryGlbValidator
     }
 }
 
-internal sealed record GlbValidationResult(bool IsValid, string? DiagnosticCode)
+public sealed record GlbValidationResult(bool IsValid, string? DiagnosticCode)
 {
     public static GlbValidationResult Succeeded() => new(true, null);
 

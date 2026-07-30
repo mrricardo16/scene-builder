@@ -1,0 +1,152 @@
+using System.Diagnostics;
+using SceneBuilder.Application;
+using SceneBuilder.Blender;
+using SceneBuilder.Domain;
+
+var blenderPath = args.Length == 2 && string.Equals(args[0], "--blender", StringComparison.Ordinal)
+    ? args[1]
+    : @"D:\tool\Blender\blender.exe";
+var temporaryDirectory = Path.Combine(Path.GetTempPath(), "scene-builder-smoke-" + Guid.NewGuid().ToString("N"));
+var cleaned = false;
+
+try
+{
+    if (!File.Exists(blenderPath))
+    {
+        throw new InvalidOperationException("Blender executable is unavailable.");
+    }
+
+    Directory.CreateDirectory(temporaryDirectory);
+    var version = await RunBlenderAsync(blenderPath, ["--version"]);
+    if (version.ExitCode != 0)
+    {
+        throw new InvalidOperationException("Blender version check failed.");
+    }
+
+    var versionLine = version.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? "unknown";
+    Console.WriteLine($"Blender: {versionLine}");
+    var sourceRoot = Path.Combine(temporaryDirectory, "sources");
+    Directory.CreateDirectory(sourceRoot);
+    var scriptPath = Path.Combine(temporaryDirectory, "create_smoke_asset.py");
+    await File.WriteAllTextAsync(scriptPath, "import bpy\nimport sys\nbpy.ops.mesh.primitive_cube_add(size=1.0)\nbpy.ops.export_scene.gltf(filepath=sys.argv[-1], export_format='GLB')\n");
+    var staticSource = Path.Combine(sourceRoot, "static.glb");
+    var dynamicSource = Path.Combine(sourceRoot, "dynamic.glb");
+    await CreateSourceGlbAsync(blenderPath, scriptPath, staticSource);
+    await CreateSourceGlbAsync(blenderPath, scriptPath, dynamicSource);
+
+    var validator = new BinaryGlbValidator();
+    if (!validator.Validate(staticSource).IsValid || !validator.Validate(dynamicSource).IsValid)
+    {
+        throw new InvalidOperationException("Synthetic source GLB validation failed.");
+    }
+
+    var staticFacility = Facility("smoke-static", "insert-static", "STATIC_SMOKE", CadSemanticClassification.StaticFacility);
+    var dynamicEquipment = Facility("smoke-dynamic", "insert-dynamic", "DYNAMIC_SMOKE", CadSemanticClassification.DynamicEquipment);
+    var draft = new SceneDraft
+    {
+        Id = "smoke-draft",
+        SemanticObjects = [staticFacility, dynamicEquipment],
+        Nodes =
+        [
+            Node(staticFacility, SceneNodeContentKind.StaticAssetReference),
+            Node(dynamicEquipment, SceneNodeContentKind.DynamicAssetReference)
+        ]
+    };
+    var configuration = new CadAssetConfiguration
+    {
+        Catalog = new CadAssetCatalog
+        {
+            ContractVersion = CadAssetConfigurationLoader.ContractVersion,
+            Assets =
+            [
+                new CadAssetDefinition { AssetId = "smoke-static", Kind = CadAssetKind.StaticFacility, RelativeGlbPath = "static.glb" },
+                new CadAssetDefinition { AssetId = "smoke-dynamic", Kind = CadAssetKind.DynamicEquipment, RelativeGlbPath = "dynamic.glb" }
+            ]
+        },
+        Bindings = new CadAssetBindingSet
+        {
+            ContractVersion = CadAssetConfigurationLoader.ContractVersion,
+            Bindings =
+            [
+                new CadAssetBinding { Id = "static", Enabled = true, Priority = 0, Kind = CadAssetKind.StaticFacility, Selector = new CadAssetBindingSelector { SemanticObjectId = staticFacility.Id }, AssetId = "smoke-static" },
+                new CadAssetBinding { Id = "dynamic", Enabled = true, Priority = 0, Kind = CadAssetKind.DynamicEquipment, Selector = new CadAssetBindingSelector { SemanticObjectId = dynamicEquipment.Id }, AssetId = "smoke-dynamic" }
+            ]
+        }
+    };
+    var result = await new BlenderSceneGenerator().GenerateAsync(new BlenderGenerationRequest
+    {
+        Draft = draft,
+        OutputDirectory = Path.Combine(temporaryDirectory, "output"),
+        OutputFileName = "scene.glb",
+        AllowOverwrite = false,
+        Tool = new BlenderToolOptions { ExecutablePath = blenderPath, Timeout = TimeSpan.FromMinutes(10), MaximumProcessOutputCharacters = 16_384 },
+        AssetGeneration = new BlenderAssetGenerationContext { AssetRootDirectory = sourceRoot, Configuration = configuration }
+    }, CancellationToken.None);
+    if (result.Status is not BlenderGenerationStatus.Succeeded || result.ArtifactPath is null || !validator.Validate(result.ArtifactPath).IsValid)
+    {
+        throw new InvalidOperationException($"Final GLB generation or validation failed: {result.Status}; {string.Join(',', result.Diagnostics.Select(diagnostic => diagnostic.Code))}");
+    }
+
+    Console.WriteLine("StaticFacility: imported");
+    Console.WriteLine("DynamicEquipment: imported");
+    Console.WriteLine("Source GLB validation: passed (2)");
+    Console.WriteLine("Final GLB validation: passed");
+}
+finally
+{
+    if (Directory.Exists(temporaryDirectory))
+    {
+        Directory.Delete(temporaryDirectory, recursive: true);
+        cleaned = true;
+    }
+
+    Console.WriteLine($"Temporary cleanup: {(cleaned ? "passed" : "not-needed")}");
+}
+
+static CadSemanticObject Facility(string id, string insertId, string block, CadSemanticClassification classification) => classification switch
+{
+    CadSemanticClassification.StaticFacility => new CadStaticFacilityObject(id, insertId, CadBounds.Computed(0, 0, 0, 1, 1, 1), null, block, new CadPoint3(1, 2, 3), 15, CadScale3.Identity),
+    CadSemanticClassification.DynamicEquipment => new CadDynamicEquipmentObject(id, insertId, CadBounds.Computed(0, 0, 0, 1, 1, 1), null, block, new CadPoint3(4, 5, 6), 30, CadScale3.Identity),
+    _ => throw new ArgumentOutOfRangeException(nameof(classification))
+};
+
+static SceneNode Node(CadSemanticObject semanticObject, SceneNodeContentKind contentKind) => new()
+{
+    Id = "node-" + semanticObject.Id,
+    SemanticObjectId = semanticObject.Id,
+    Classification = semanticObject.Classification,
+    ContentKind = contentKind,
+    Bounds = semanticObject.Bounds,
+    Transform = semanticObject switch
+    {
+        CadStaticFacilityObject facility => new SceneNodeTransform(facility.Position, facility.RotationDegrees, facility.Scale),
+        CadDynamicEquipmentObject equipment => new SceneNodeTransform(equipment.Position, equipment.RotationDegrees, equipment.Scale),
+        _ => throw new ArgumentOutOfRangeException(nameof(semanticObject))
+    }
+};
+
+static async Task CreateSourceGlbAsync(string blenderPath, string scriptPath, string outputPath)
+{
+    var result = await RunBlenderAsync(blenderPath, ["--background", "--factory-startup", "--python", scriptPath, "--", outputPath]);
+    if (result.ExitCode != 0 || !File.Exists(outputPath))
+    {
+        throw new InvalidOperationException("Synthetic GLB creation failed.");
+    }
+}
+
+static async Task<ProcessResult> RunBlenderAsync(string blenderPath, IReadOnlyList<string> arguments)
+{
+    using var process = new Process { StartInfo = new ProcessStartInfo { FileName = blenderPath, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true } };
+    foreach (var argument in arguments)
+    {
+        process.StartInfo.ArgumentList.Add(argument);
+    }
+
+    process.Start();
+    var standardOutput = await process.StandardOutput.ReadToEndAsync();
+    var standardError = await process.StandardError.ReadToEndAsync();
+    await process.WaitForExitAsync();
+    return new ProcessResult(process.ExitCode, standardOutput, standardError);
+}
+
+internal sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);
