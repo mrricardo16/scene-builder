@@ -2,7 +2,7 @@
 
 ## 重基线
 
-本路线图面向“导入、分析、调整、生成、预览、发布”的 Windows 本地场景构建产品。它以现有底层能力为起点，但不把底层测试、SmokeTest 或 POC 表述为已有 Desktop 产品。当前没有 Avalonia 项目、完整转换 CLI、统一 Application 服务或 Analyze/Plan/Build 入口。
+本路线图面向“导入、分析、调整、生成、预览、发布”的 Windows 本地场景构建产品。它以现有底层能力为起点，但不把底层测试、SmokeTest 或 POC 表述为已有 Desktop 产品。当前没有 Avalonia 项目、完整转换 CLI 或真实 Analyze/Plan/Build 入口；CORE-01 已提供其共用的 Application Host、能力注册表与 CLI 框架。
 
 DXF 是第一条验收路径。DWG 是产品目标输入，但在受控转换器、许可、取消、超时、Xref、代理对象和真实样本闸门完成前保持 Unsupported。单体 GLB、Scene Package 和本地 Cartesian 3D Tiles 1.1 是可选择输出；内嵌预览均需独立 POC。
 
@@ -39,7 +39,7 @@ flowchart LR
 
 | 顺序 | 任务 | 退出条件 |
 | --- | --- | --- |
-| 1 | CORE-01 统一应用层转换入口 | CLI 与 Desktop 调用同一服务；Desktop 不直连 CAD/Blender/Tiles；进度与取消契约明确。 |
+| 1 | CORE-01 共享 Application Host 与 CLI 框架 | CLI 与未来 Desktop 复用同一 Host；doctor/capabilities 可用；进度、取消、能力与相对产物契约明确；不实现真实转换。 |
 | 2 | CORE-02 CAD 导入分析 | 可返回受控 `CadImportAnalysisResult`，分析不启动 Blender。 |
 | 3 | CORE-03 可编辑 Conversion Plan | Analysis → Draft → Validation → Frozen Plan 具备版本和确定性。 |
 | 4 | CORE-04 Frozen Plan 构建 | 冻结计划可选择生成 GLB、Scene Package、3D Tiles。 |

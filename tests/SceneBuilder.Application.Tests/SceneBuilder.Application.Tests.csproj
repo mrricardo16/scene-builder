@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SceneBuilder.Application\SceneBuilder.Application.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Cli\SceneBuilder.Cli.csproj" />
+    <ProjectReference Include="..\..\src\SceneBuilder.Composition\SceneBuilder.Composition.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Tiles\SceneBuilder.Tiles.csproj" />
 
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

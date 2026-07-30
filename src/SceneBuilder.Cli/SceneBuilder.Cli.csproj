@@ -8,8 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SceneBuilder.Application\SceneBuilder.Application.csproj" />
-    <ProjectReference Include="..\SceneBuilder.Infrastructure\SceneBuilder.Infrastructure.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Composition\SceneBuilder.Composition.csproj" />
   </ItemGroup>
 
 </Project>
