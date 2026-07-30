@@ -8,7 +8,8 @@ public sealed class SceneBuilderHost(
     ISceneCapabilityRegistry capabilityRegistry,
     IOutputRootPolicy? outputRootPolicy = null,
     CadImportAnalysisHandler? cadImportAnalysisHandler = null,
-    IConversionPlanService? conversionPlanService = null)
+    IConversionPlanService? conversionPlanService = null,
+    BuildFrozenPlanHandler? buildFrozenPlanHandler = null)
 {
     public DoctorService DoctorService { get; } = doctorService ?? throw new ArgumentNullException(nameof(doctorService));
 
@@ -19,4 +20,6 @@ public sealed class SceneBuilderHost(
     public CadImportAnalysisHandler? CadImportAnalysisHandler { get; } = cadImportAnalysisHandler;
 
     public IConversionPlanService? ConversionPlanService { get; } = conversionPlanService;
+
+    public BuildFrozenPlanHandler? BuildFrozenPlanHandler { get; } = buildFrozenPlanHandler;
 }

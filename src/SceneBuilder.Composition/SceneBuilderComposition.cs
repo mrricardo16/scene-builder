@@ -27,7 +27,7 @@ public static class SceneBuilderComposition
             new UnsupportedDwgCadInputAdapter(new UnsupportedDwgProbe())
         ],
         outputRootPolicy);
-        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, new ConversionPlanService(outputRootPolicy));
+        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, new ConversionPlanService(outputRootPolicy), new BuildFrozenPlanHandler(outputRootPolicy));
     }
 
     private static ISceneCapabilityRegistry CreateCapabilityRegistry() => new SceneCapabilityRegistry(
