@@ -1,4 +1,5 @@
 using SceneBuilder.Composition;
+using SceneBuilder.Application;
 
 namespace SceneBuilder.Cli;
 
@@ -30,6 +31,7 @@ public sealed class SceneBuilderCliApplication(
                 CliCommandKind.Help => await WriteHelpAsync(),
                 CliCommandKind.Capabilities => await WriteCapabilitiesAsync(command.OutputFormat),
                 CliCommandKind.Doctor => await RunDoctorAsync(command.Doctor!, cancellationToken),
+                CliCommandKind.Analyze => await RunAnalyzeAsync(command.Analyze!, command.OutputFormat, cancellationToken),
                 _ => throw new InvalidOperationException("The CLI command kind is not supported.")
             };
         }
@@ -78,5 +80,22 @@ public sealed class SceneBuilderCliApplication(
         }
 
         return (int)CliExitCode.Success;
+    }
+
+    private async Task<int> RunAnalyzeAsync(AnalyzeCommand command, CliOutputFormat outputFormat, CancellationToken cancellationToken)
+    {
+        var handler = _host.CadImportAnalysisHandler ?? throw new InvalidOperationException("CAD analysis is not configured.");
+        var result = await handler.ExecuteAsync(command.Request, progress: null, cancellationToken);
+        var output = outputFormat is CliOutputFormat.Json
+            ? CliOutputWriter.SerializeAnalyzeJson(result)
+            : CliOutputWriter.FormatAnalyzeText(result);
+        await _standardOutput.WriteLineAsync(output);
+        return result.Status switch
+        {
+            SceneOperationStatus.Succeeded or SceneOperationStatus.PartiallySucceeded => (int)CliExitCode.Success,
+            SceneOperationStatus.Cancelled => (int)CliExitCode.Cancelled,
+            SceneOperationStatus.Unsupported => (int)CliExitCode.CapabilityUnavailable,
+            _ => (int)CliExitCode.Failed
+        };
     }
 }

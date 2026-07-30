@@ -34,3 +34,6 @@ Planned 不是运行时操作结果。当前 `capabilities` 仅报告状态，�
 ```
 
 未知命令与非法格式写入 stderr 和稳定帮助，不创建运行时文件，也不抛出未处理异常。
+# Analyze 命令
+
+`analyze --input <file> --output <directory> [--rules <file>] [--unit <meters|millimeters|centimeters>] [--format text|json]` 成功返回 0，参数错误返回 2，取消返回 3，Unsupported（含 DWG）返回 4，执行失败返回 5。text/json 仅输出脱敏摘要和相对 Artifact 路径；完整结果固定写入 `analysis/cad-analysis.json`。

@@ -11,6 +11,7 @@ public static class CliOutputWriter
         Usage:
           scene-builder doctor [--output <directory>] [--blender-path <file>] [--tiles-path <file>]
           scene-builder capabilities [--format text|json]
+          scene-builder analyze --input <file> --output <directory> [--rules <file>] [--unit <meters|millimeters|centimeters>] [--format text|json]
           scene-builder help
         """;
 
@@ -65,6 +66,22 @@ public static class CliOutputWriter
             output.WriteLine($"  Detail / 说明: {tool.Detail}");
         }
     }
+
+    public static string FormatAnalyzeText(CadImportAnalysisResult result) => string.Join(Environment.NewLine,
+    [
+        "Scene Builder CAD analysis",
+        $"Status: {result.Status}",
+        $"Input: {result.Input.InputKind}",
+        $"Unit: {result.Input.Unit}",
+        $"Layers: {result.Structure.Layers.Count}",
+        $"Blocks: {result.Structure.Blocks.Count}",
+        $"Entities: {result.Structure.EntityTypes.Sum(entityType => entityType.EntityCount)}",
+        $"Valid contours: {result.Geometry.ValidContourCount}",
+        $"Unclassified: {result.Classification.UnclassifiedCount}",
+        $"Artifact: {result.Artifacts.FirstOrDefault()?.RelativePath ?? "None"}"
+    ]);
+
+    public static string SerializeAnalyzeJson(CadImportAnalysisResult result) => JsonSerializer.Serialize(result, JsonOptions);
 
     private static string GetDisplayName(string toolName) => toolName switch
     {

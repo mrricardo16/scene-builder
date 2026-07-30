@@ -15,3 +15,6 @@
 ## 验证与退出
 
 验证 DXF 分析无 Blender 进程；DWG 未配置和验证中均返回明确状态；诊断不泄露敏感内容。退出时分析结果可稳定供 CORE-03 使用。
+# 实施记录（2026-07-30）
+
+已提供共享 Host 的 DXF Analyze：固定输入副本、确定性 Analysis Artifact、可选严格规则分类与 CLI text/json 输出。DWG 保持 Unsupported；没有 Conversion Plan、Build 或模型生成。

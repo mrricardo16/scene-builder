@@ -22,3 +22,6 @@ dotnet test SceneBuilder.sln
 ```
 
 运行时产物只能写入调用方明确提供的作业输出目录；不得写入仓库根目录、`src/` 或 `tests/`。所有文本文件使用 UTF-8。
+# CORE-02 CAD import analysis
+
+`scene-builder analyze --input <dxf-file> --output <output-root> [--rules <rules-json>] [--unit <meters|millimeters|centimeters>] [--format text|json]` performs the current bounded DXF analysis path. It copies the source to `input/source.dxf`, publishes a validated deterministic `analysis/cad-analysis.json`, and does not start Blender or generate a model. DWG remains unsupported.

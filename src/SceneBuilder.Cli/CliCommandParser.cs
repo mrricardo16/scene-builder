@@ -1,4 +1,6 @@
 using SceneBuilder.Application.Doctor;
+using SceneBuilder.Application;
+using SceneBuilder.Domain;
 
 namespace SceneBuilder.Cli;
 
@@ -7,7 +9,8 @@ public enum CliCommandKind
     Help = 0,
     Doctor = 1,
     Capabilities = 2,
-    Invalid = 3
+    Analyze = 3,
+    Invalid = 4
 }
 
 public enum CliOutputFormat
@@ -31,6 +34,8 @@ public sealed record CliCommand
 
     public DoctorCommand? Doctor { get; init; }
 
+    public AnalyzeCommand? Analyze { get; init; }
+
     public CliOutputFormat OutputFormat { get; init; } = CliOutputFormat.Text;
 
     public string? Error { get; init; }
@@ -51,12 +56,76 @@ public static class CliCommandParser
             return ParseDoctor(args[1..]);
         }
 
+        if (string.Equals(args[0], "analyze", StringComparison.OrdinalIgnoreCase))
+        {
+            return ParseAnalyze(args[1..]);
+        }
+
         return args[0] switch
         {
             "help" or "--help" when args.Length == 1 => new CliCommand { Kind = CliCommandKind.Help },
             "capabilities" => ParseCapabilities(args[1..]),
             _ => Invalid($"Unknown command: {args[0]}")
         };
+    }
+
+    private static CliCommand ParseAnalyze(string[] args)
+    {
+        string? input = null;
+        string? output = null;
+        string? rules = null;
+        CadUnit? unit = null;
+        var format = CliOutputFormat.Text;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var option = args[index];
+            if (index == args.Length - 1 || string.IsNullOrWhiteSpace(args[index + 1]))
+            {
+                return Invalid($"Option {option} requires a non-empty value.");
+            }
+
+            var value = args[++index];
+            switch (option)
+            {
+                case "--input" when input is null: input = value; break;
+                case "--output" when output is null: output = value; break;
+                case "--rules" when rules is null: rules = value; break;
+                case "--format" when value is "text": format = CliOutputFormat.Text; break;
+                case "--format" when value is "json": format = CliOutputFormat.Json; break;
+                case "--unit" when unit is null && TryParseUnit(value, out var parsedUnit): unit = parsedUnit; break;
+                default: return Invalid($"Unknown or duplicate option: {option}");
+            }
+        }
+
+        if (input is null || output is null)
+        {
+            return Invalid("Usage: scene-builder analyze --input <file> --output <directory> [--rules <file>] [--unit <meters|millimeters|centimeters>] [--format text|json]");
+        }
+
+        return new CliCommand
+        {
+            Kind = CliCommandKind.Analyze,
+            OutputFormat = format,
+            Analyze = new AnalyzeCommand(new CadImportAnalysisRequest
+            {
+                InputPath = Path.GetFullPath(input),
+                OutputRootDirectory = Path.GetFullPath(output),
+                RuleSetPath = rules is null ? null : Path.GetFullPath(rules),
+                UnitOverride = unit
+            })
+        };
+    }
+
+    private static bool TryParseUnit(string value, out CadUnit unit)
+    {
+        unit = value switch
+        {
+            "meters" => CadUnit.Meters,
+            "millimeters" => CadUnit.Millimeters,
+            "centimeters" => CadUnit.Centimeters,
+            _ => CadUnit.Unknown
+        };
+        return unit is not CadUnit.Unknown;
     }
 
     private static CliCommand ParseDoctor(string[] args)

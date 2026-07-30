@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SceneBuilder.Application\SceneBuilder.Application.csproj" />
+    <ProjectReference Include="..\..\src\SceneBuilder.Cad\SceneBuilder.Cad.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Cli\SceneBuilder.Cli.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Composition\SceneBuilder.Composition.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Tiles\SceneBuilder.Tiles.csproj" />
@@ -28,6 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\fixtures\synthetic\public-synthetic-wall.dxf">
+      <Link>fixtures\synthetic\public-synthetic-wall.dxf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\fixtures\rules\public-synthetic-scene-draft-rules.json">
       <Link>fixtures\rules\public-synthetic-scene-draft-rules.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

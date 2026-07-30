@@ -17,3 +17,6 @@
 未来统一入口以 `ICadInputAdapter` 或实施时确认的等价契约隔离输入：DXF → DXF Adapter → Analyze；DWG → DWG Adapter → 直接解析或受控中间 DXF → DXF Adapter → Analyze。DWG 在未配置时显示“DWG 转换器未配置”，在支持闸门未通过时显示“DWG 支持仍在验证”，均不得启动作业。
 
 原始 CAD 始终只读保存。任何工具版本、许可结论、输入副本指纹、取消、超时、Xref 和代理对象诊断必须由受控作业记录；不能由 UI 或文档虚构成功。
+# CORE-02 Analyze 边界
+
+DXF 现在可走受控副本的分析链路（现有 Inspector/Extractor 支持的实体范围内），输出结构和分析摘要；Xref 与代理对象为 Unavailable。该状态不改变真实复杂 DXF 的 Partial 边界。DWG 仍返回 `DWG_UNSUPPORTED`，没有转换、外部进程或中间 DXF。

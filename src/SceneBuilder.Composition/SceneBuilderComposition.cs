@@ -1,5 +1,6 @@
 using SceneBuilder.Application;
 using SceneBuilder.Application.Doctor;
+using SceneBuilder.Cad;
 using SceneBuilder.Infrastructure.Doctor;
 
 namespace SceneBuilder.Composition;
@@ -19,10 +20,14 @@ public static class SceneBuilderComposition
             new ConfiguredExecutableProbe(DoctorTool.TilesConverter, fileSystem, versionReader)
         ]);
 
-        return new SceneBuilderHost(
-            doctorService,
-            CreateCapabilityRegistry(),
-            new OutputRootPolicy());
+        var outputRootPolicy = new OutputRootPolicy();
+        var analyzeHandler = new CadImportAnalysisHandler(
+        [
+            new DxfCadInputAdapter(new ACadSharpDxfInspector(), new ACadSharpDxfGeometryExtractor()),
+            new UnsupportedDwgCadInputAdapter(new UnsupportedDwgProbe())
+        ],
+        outputRootPolicy);
+        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler);
     }
 
     private static ISceneCapabilityRegistry CreateCapabilityRegistry() => new SceneCapabilityRegistry(
@@ -30,7 +35,8 @@ public static class SceneBuilderComposition
         new SceneCapability { Code = "DOCTOR", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "APPLICATION_HOST", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "CLI_FRAMEWORK", State = SceneCapabilityState.Available },
-        new SceneCapability { Code = "ANALYZE", State = SceneCapabilityState.Planned },
+        new SceneCapability { Code = "ANALYZE", State = SceneCapabilityState.Available },
+        new SceneCapability { Code = "DXF_ANALYZE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "PLAN_VALIDATE", State = SceneCapabilityState.Planned },
         new SceneCapability { Code = "PLAN_FREEZE", State = SceneCapabilityState.Planned },
         new SceneCapability { Code = "BUILD_GLB", State = SceneCapabilityState.Planned },

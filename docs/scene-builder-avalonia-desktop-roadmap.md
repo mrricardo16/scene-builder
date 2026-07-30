@@ -51,3 +51,6 @@ flowchart LR
 | 最后 | INTEGRATION-01 | 仅在统一 Application 服务和 Desktop 稳定后评估 IDTS API/Web 接入。 |
 
 所有实现必须保持 Domain 独立；不得把 ACadSharp、Avalonia、Blender 或具体 Tiles 转换器引入 `SceneBuilder.Domain`。运行时产物只可写入明确的作业输出目录或未来 `%LocalAppData%/SceneBuilder` 根，绝不写入仓库、`src/` 或 `tests/`。
+# CORE-02 可供桌面端消费的输入
+
+后续 Avalonia 通过共享 Host 调用 `CadImportAnalysisHandler`，消费 `CadImportAnalysisResult` 与受控输出根中的 `analysis/cad-analysis.json`；本任务没有引入 Avalonia 项目或 ViewModel。
