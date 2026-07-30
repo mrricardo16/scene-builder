@@ -22,6 +22,7 @@ public sealed class SceneBuilderCompositionTests
             "CLI_FRAMEWORK",
             "ANALYZE",
             "DXF_ANALYZE",
+            "PLAN_CREATE",
             "PLAN_VALIDATE",
             "PLAN_FREEZE",
             "BUILD_GLB",

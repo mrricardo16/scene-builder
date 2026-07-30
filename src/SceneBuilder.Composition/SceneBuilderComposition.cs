@@ -27,7 +27,7 @@ public static class SceneBuilderComposition
             new UnsupportedDwgCadInputAdapter(new UnsupportedDwgProbe())
         ],
         outputRootPolicy);
-        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler);
+        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, new ConversionPlanService(outputRootPolicy));
     }
 
     private static ISceneCapabilityRegistry CreateCapabilityRegistry() => new SceneCapabilityRegistry(
@@ -37,8 +37,9 @@ public static class SceneBuilderComposition
         new SceneCapability { Code = "CLI_FRAMEWORK", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "ANALYZE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "DXF_ANALYZE", State = SceneCapabilityState.Available },
-        new SceneCapability { Code = "PLAN_VALIDATE", State = SceneCapabilityState.Planned },
-        new SceneCapability { Code = "PLAN_FREEZE", State = SceneCapabilityState.Planned },
+        new SceneCapability { Code = "PLAN_CREATE", State = SceneCapabilityState.Available },
+        new SceneCapability { Code = "PLAN_VALIDATE", State = SceneCapabilityState.Available },
+        new SceneCapability { Code = "PLAN_FREEZE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "BUILD_GLB", State = SceneCapabilityState.Planned },
         new SceneCapability { Code = "BUILD_SCENE_PACKAGE", State = SceneCapabilityState.Planned },
         new SceneCapability { Code = "BUILD_3D_TILES", State = SceneCapabilityState.Planned },

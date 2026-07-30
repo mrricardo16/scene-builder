@@ -10,7 +10,8 @@ public enum CliCommandKind
     Doctor = 1,
     Capabilities = 2,
     Analyze = 3,
-    Invalid = 4
+    Plan = 4,
+    Invalid = 5
 }
 
 public enum CliOutputFormat
@@ -35,6 +36,8 @@ public sealed record CliCommand
     public DoctorCommand? Doctor { get; init; }
 
     public AnalyzeCommand? Analyze { get; init; }
+
+    public PlanCommand? Plan { get; init; }
 
     public CliOutputFormat OutputFormat { get; init; } = CliOutputFormat.Text;
 
@@ -61,12 +64,48 @@ public static class CliCommandParser
             return ParseAnalyze(args[1..]);
         }
 
+        if (string.Equals(args[0], "plan", StringComparison.OrdinalIgnoreCase))
+        {
+            return ParsePlan(args[1..]);
+        }
+
         return args[0] switch
         {
             "help" or "--help" when args.Length == 1 => new CliCommand { Kind = CliCommandKind.Help },
             "capabilities" => ParseCapabilities(args[1..]),
             _ => Invalid($"Unknown command: {args[0]}")
         };
+    }
+
+    private static CliCommand ParsePlan(string[] args)
+    {
+        if (args.Length < 1 || !TryPlanOperation(args[0], out var operation)) return Invalid("Usage: scene-builder plan <create|validate|freeze> --analysis|--plan <file> --output <directory> [--format text|json]");
+        string? input = null;
+        string? output = null;
+        var format = CliOutputFormat.Text;
+        var inputOption = operation is PlanCommandOperation.Create ? "--analysis" : "--plan";
+        for (var index = 1; index < args.Length; index++)
+        {
+            var option = args[index];
+            if (index == args.Length - 1 || string.IsNullOrWhiteSpace(args[index + 1])) return Invalid($"Option {option} requires a non-empty value.");
+            var value = args[++index];
+            switch (option)
+            {
+                case var expected when expected == inputOption && input is null: input = value; break;
+                case "--output" when output is null: output = value; break;
+                case "--format" when value is "text": format = CliOutputFormat.Text; break;
+                case "--format" when value is "json": format = CliOutputFormat.Json; break;
+                default: return Invalid($"Unknown or duplicate option: {option}");
+            }
+        }
+        if (input is null || output is null) return Invalid($"Usage: scene-builder plan {args[0]} {inputOption} <file> --output <directory> [--format text|json]");
+        return new CliCommand { Kind = CliCommandKind.Plan, OutputFormat = format, Plan = new PlanCommand(operation, Path.GetFullPath(input), Path.GetFullPath(output)) };
+    }
+
+    private static bool TryPlanOperation(string value, out PlanCommandOperation operation)
+    {
+        operation = value.ToLowerInvariant() switch { "create" => PlanCommandOperation.Create, "validate" => PlanCommandOperation.Validate, "freeze" => PlanCommandOperation.Freeze, _ => (PlanCommandOperation)(-1) };
+        return Enum.IsDefined(operation);
     }
 
     private static CliCommand ParseAnalyze(string[] args)

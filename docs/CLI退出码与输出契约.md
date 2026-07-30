@@ -37,3 +37,7 @@ Planned 不是运行时操作结果。当前 `capabilities` 仅报告状态，�
 # Analyze 命令
 
 `analyze --input <file> --output <directory> [--rules <file>] [--unit <meters|millimeters|centimeters>] [--format text|json]` 成功返回 0，参数错误返回 2，取消返回 3，Unsupported（含 DWG）返回 4，执行失败返回 5。text/json 仅输出脱敏摘要和相对 Artifact 路径；完整结果固定写入 `analysis/cad-analysis.json`。
+
+# Plan 命令
+
+`plan create --analysis <file> --output <directory>`、`plan validate --plan <file> --output <directory>` 和 `plan freeze --plan <file> --output <directory>` 支持 text/json。创建和冻结成功为 0；无效 Plan validation 仍发布 `validation.json`，但返回 5；参数错误为 2、取消为 3、Unsupported 为 4。

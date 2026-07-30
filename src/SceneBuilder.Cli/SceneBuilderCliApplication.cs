@@ -32,6 +32,7 @@ public sealed class SceneBuilderCliApplication(
                 CliCommandKind.Capabilities => await WriteCapabilitiesAsync(command.OutputFormat),
                 CliCommandKind.Doctor => await RunDoctorAsync(command.Doctor!, cancellationToken),
                 CliCommandKind.Analyze => await RunAnalyzeAsync(command.Analyze!, command.OutputFormat, cancellationToken),
+                CliCommandKind.Plan => await RunPlanAsync(command.Plan!, command.OutputFormat, cancellationToken),
                 _ => throw new InvalidOperationException("The CLI command kind is not supported.")
             };
         }
@@ -98,4 +99,45 @@ public sealed class SceneBuilderCliApplication(
             _ => (int)CliExitCode.Failed
         };
     }
+
+    private async Task<int> RunPlanAsync(PlanCommand command, CliOutputFormat outputFormat, CancellationToken cancellationToken)
+    {
+        var service = _host.ConversionPlanService ?? throw new InvalidOperationException("Conversion plan is not configured.");
+        return command.Operation switch
+        {
+            PlanCommandOperation.Create => await WriteDraftAsync("planCreate", await service.CreateDraftAsync(new CreateConversionPlanDraftRequest { AnalysisPath = command.InputPath, OutputRootDirectory = command.OutputRootDirectory }, cancellationToken), outputFormat),
+            PlanCommandOperation.Validate => await WriteValidationAsync(await service.ValidateAsync(new ValidateConversionPlanRequest { PlanPath = command.InputPath, OutputRootDirectory = command.OutputRootDirectory }, cancellationToken), outputFormat),
+            PlanCommandOperation.Freeze => await WriteFrozenAsync(await service.FreezeAsync(new FreezeConversionPlanRequest { PlanPath = command.InputPath, OutputRootDirectory = command.OutputRootDirectory }, cancellationToken), outputFormat),
+            _ => throw new InvalidOperationException("The plan operation is not supported.")
+        };
+    }
+
+    private async Task<int> WriteDraftAsync(string operation, ConversionPlanDraftResult result, CliOutputFormat format)
+    {
+        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = "1.0", operation, status = result.Status, planId = result.Draft?.PlanId, revision = result.Draft?.Revision, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText(operation, result.Draft?.PlanId ?? "Unknown", result.Draft?.Revision ?? 0, result.Status.ToString(), result.Artifacts, result.Diagnostics);
+        await _standardOutput.WriteLineAsync(output);
+        return Exit(result.Status);
+    }
+
+    private async Task<int> WriteValidationAsync(ConversionPlanValidationResult result, CliOutputFormat format)
+    {
+        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = "1.0", operation = "planValidate", status = result.Status, planId = result.PlanId, revision = result.Revision, validationStatus = result.ValidationStatus, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText("planValidate", result.PlanId, result.Revision, result.ValidationStatus.ToString(), result.Artifacts, result.Diagnostics);
+        await _standardOutput.WriteLineAsync(output);
+        return Exit(result.Status);
+    }
+
+    private async Task<int> WriteFrozenAsync(FrozenConversionPlanResult result, CliOutputFormat format)
+    {
+        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = "1.0", operation = "planFreeze", status = result.Status, planId = result.FrozenPlan?.Draft.PlanId, revision = result.FrozenPlan?.Draft.Revision, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText("planFreeze", result.FrozenPlan?.Draft.PlanId ?? "Unknown", result.FrozenPlan?.Draft.Revision ?? 0, result.Status.ToString(), result.Artifacts, result.Diagnostics);
+        await _standardOutput.WriteLineAsync(output);
+        return Exit(result.Status);
+    }
+
+    private static int Exit(SceneOperationStatus status) => status switch
+    {
+        SceneOperationStatus.Succeeded or SceneOperationStatus.PartiallySucceeded => (int)CliExitCode.Success,
+        SceneOperationStatus.Cancelled => (int)CliExitCode.Cancelled,
+        SceneOperationStatus.Unsupported => (int)CliExitCode.CapabilityUnavailable,
+        _ => (int)CliExitCode.Failed
+    };
 }

@@ -15,3 +15,6 @@
 ## 验证与退出
 
 验证修订不覆盖旧版本、无效计划不可冻结、冻结后输入确定、规则和资产映射复用现有安全边界。退出时 CORE-04 可只消费冻结快照。
+# 实施记录（2026-07-30）
+
+已从验证后的 Analysis Artifact 创建确定性 Plan Draft、独立 revision、validation Artifact 和不可变 Frozen Plan，并接入共享 Host 与 CLI。没有启动 Blender、读取 DXF 或生成三维产物；Build 继续属于 CORE-04。

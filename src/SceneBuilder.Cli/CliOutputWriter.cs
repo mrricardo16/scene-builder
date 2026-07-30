@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SceneBuilder.Application;
 using SceneBuilder.Application.Doctor;
+using SceneBuilder.Domain;
 
 namespace SceneBuilder.Cli;
 
@@ -12,6 +13,7 @@ public static class CliOutputWriter
           scene-builder doctor [--output <directory>] [--blender-path <file>] [--tiles-path <file>]
           scene-builder capabilities [--format text|json]
           scene-builder analyze --input <file> --output <directory> [--rules <file>] [--unit <meters|millimeters|centimeters>] [--format text|json]
+          scene-builder plan <create|validate|freeze> --analysis|--plan <file> --output <directory> [--format text|json]
           scene-builder help
         """;
 
@@ -82,6 +84,11 @@ public static class CliOutputWriter
     ]);
 
     public static string SerializeAnalyzeJson(CadImportAnalysisResult result) => JsonSerializer.Serialize(result, JsonOptions);
+
+    public static string FormatPlanText(string operation, string planId, int revision, string status, IReadOnlyList<SceneArtifactDescriptor> artifacts, IReadOnlyList<SceneDiagnostic> diagnostics) => string.Join(Environment.NewLine,
+    ["Scene Builder Conversion Plan", $"Operation: {operation}", $"Plan: {planId}", $"Revision: {revision}", $"Status: {status}", $"Diagnostics: {diagnostics.Count}", $"Artifact: {artifacts.FirstOrDefault()?.RelativePath ?? "None"}"]);
+
+    public static string SerializePlanJson(object result) => JsonSerializer.Serialize(result, JsonOptions);
 
     private static string GetDisplayName(string toolName) => toolName switch
     {

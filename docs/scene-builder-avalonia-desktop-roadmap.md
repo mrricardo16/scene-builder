@@ -54,3 +54,7 @@ flowchart LR
 # CORE-02 可供桌面端消费的输入
 
 后续 Avalonia 通过共享 Host 调用 `CadImportAnalysisHandler`，消费 `CadImportAnalysisResult` 与受控输出根中的 `analysis/cad-analysis.json`；本任务没有引入 Avalonia 项目或 ViewModel。
+
+# CORE-03 可供桌面端消费的计划服务
+
+Avalonia 后续调用同一 `IConversionPlanService` 创建、保存、验证和冻结 Draft，不需要直接复用 CLI 参数或自行复制验证逻辑。

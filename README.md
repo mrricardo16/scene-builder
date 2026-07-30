@@ -25,3 +25,7 @@ dotnet test SceneBuilder.sln
 # CORE-02 CAD import analysis
 
 `scene-builder analyze --input <dxf-file> --output <output-root> [--rules <rules-json>] [--unit <meters|millimeters|centimeters>] [--format text|json]` performs the current bounded DXF analysis path. It copies the source to `input/source.dxf`, publishes a validated deterministic `analysis/cad-analysis.json`, and does not start Blender or generate a model. DWG remains unsupported.
+
+# CORE-03 editable conversion plan
+
+`scene-builder plan create --analysis <analysis-json> --output <output-root>`, `plan validate --plan <plan-draft-json> --output <output-root>`, and `plan freeze --plan <plan-draft-json> --output <output-root>` publish independent plan revisions, validation and frozen-plan artifacts. They only configure future Build work; they do not generate a scene, GLB, package, or tileset.

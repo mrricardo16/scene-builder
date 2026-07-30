@@ -7,7 +7,8 @@ public sealed class SceneBuilderHost(
     DoctorService doctorService,
     ISceneCapabilityRegistry capabilityRegistry,
     IOutputRootPolicy? outputRootPolicy = null,
-    CadImportAnalysisHandler? cadImportAnalysisHandler = null)
+    CadImportAnalysisHandler? cadImportAnalysisHandler = null,
+    IConversionPlanService? conversionPlanService = null)
 {
     public DoctorService DoctorService { get; } = doctorService ?? throw new ArgumentNullException(nameof(doctorService));
 
@@ -16,4 +17,6 @@ public sealed class SceneBuilderHost(
     public IOutputRootPolicy OutputRootPolicy { get; } = outputRootPolicy ?? new OutputRootPolicy();
 
     public CadImportAnalysisHandler? CadImportAnalysisHandler { get; } = cadImportAnalysisHandler;
+
+    public IConversionPlanService? ConversionPlanService { get; } = conversionPlanService;
 }
