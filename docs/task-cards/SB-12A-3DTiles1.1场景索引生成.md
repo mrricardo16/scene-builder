@@ -14,6 +14,8 @@
 
 不实现地理配准、Root Transform、b3dm/i3dm、HLOD、LOD、隐式分块、Metadata、Cesium/IDTS 前端、HTTP 服务或重新调用 Blender。
 
+SB-12A 是 [大厂区 3D Tiles 产品规格与验收基线](../大厂区3DTiles产品规格与验收基线.md) 的已验证两层基础，不是大型厂区 HLOD 或 Viewer 产品实现；后续能力由 LARGE-00 至 LARGE-04 定义。
+
 ## 证据
 
 `SceneBuilder.Tiles.Tests` 覆盖 Box、完整/部分包、URI 越界与覆盖保护。`SceneBuilder.Blender.SmokeTest --mode tileset` 使用真实 Blender 创建 2 个常规和 1 个 Global 分区，再验证 3 个 leaf、Tileset 和 GLB。

@@ -2,7 +2,7 @@
 
 ## 目标与边界
 
-SB-12A 将已验证的 `scene-package.json` 封装为本地米制坐标的 3D Tiles 1.1 `tileset.json`。它只读取现有场景包和 `partitions/*.glb`，不重新运行 Blender、解析 DXF、计算分区或修改 `SceneDraft`、GLB、`scene-package.json` 与 `JobReport` v0。
+SB-12A 将已验证的 `scene-package.json` 封装为本地米制坐标的 3D Tiles 1.1 `tileset.json`。它只读取现有场景包和 `partitions/*.glb`，不重新运行 Blender、解析 DXF、计算分区或修改 `SceneDraft`、GLB、`scene-package.json` 与 `JobReport` v0。它是 [大厂区 3D Tiles 产品规格与验收基线](../../大厂区3DTiles产品规格与验收基线.md) 的两层输入基础，不是完整大厂区 HLOD 产品方案。
 
 实现位于 `SceneBuilder.Tiles`：生成器组合既有 `ScenePackageValidator` 与 `BinaryGlbValidator`，但不复制 GLB 二进制解析。Domain 不理解 3D Tiles，也不访问文件系统。现有外部 `ITilesConverter` POC 边界保持不变；本任务不选择外部转换器。
 

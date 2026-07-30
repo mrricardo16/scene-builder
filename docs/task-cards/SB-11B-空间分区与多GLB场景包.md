@@ -15,3 +15,5 @@
 ## SB-12A 交接
 
 SB-12A 只消费本卡发布的 `scene-package.json` 与 `partitions/*.glb`。Tileset Leaf 必须使用已验证分区的 `ContentBounds` 和原始相对 artifactPath；不得重跑分区、Blender 或修改本卡的场景包产物。
+
+大型厂区层级、HLOD、资源预算和 Viewer 验收不属于 SB-11B；它们只能在 [大厂区 3D Tiles 产品规格与验收基线](../大厂区3DTiles产品规格与验收基线.md) 及 LARGE-00 至 LARGE-04 中推进。

@@ -25,8 +25,13 @@ flowchart LR
   D4 --> D5["DESKTOP-05 输出配置与生成"]
   C4 --> D5
   D5 --> D6["DESKTOP-06 进度、取消、历史与恢复"]
+  C4 --> L0["LARGE-00 大厂区样本与基线"]
+  L0 --> L1["LARGE-01 多层 Tileset 与 HLOD"]
+  L1 --> L2["LARGE-02 GLB 优化与实例化"]
+  L2 --> L3["LARGE-03 增量与缓存"]
+  L3 --> L4["LARGE-04 Viewer 验收"]
   POC --> D7["DESKTOP-07 GLB 预览"]
-  POC --> D8["DESKTOP-08 3D Tiles 预览"]
+  L4 --> D8["DESKTOP-08 3D Tiles 预览"]
   D6 --> D9["DESKTOP-09 Windows 发布"]
 ```
 
@@ -42,6 +47,7 @@ flowchart LR
 | 并行 | CAD-DWG-01 | DWG Adapter 和受控转换的许可、Xref、代理对象、取消、超时与真实样本闸门完成。 |
 | 5 | DESKTOP-00 | 分别验证二维 CAD、GLB WebView、3D Tiles WebView，失败有受控回退。 |
 | 6 | DESKTOP-01 至 09 | 按任务卡依次交付宿主、工作台、输出、历史、预览与发布。 |
+| 大厂区 | LARGE-00 至 04 | 在 CORE-04 后，以真实样本、HLOD、优化、缓存和 Viewer 验收逐步推进；SB-12A 仅为输入基础。 |
 | 最后 | INTEGRATION-01 | 仅在统一 Application 服务和 Desktop 稳定后评估 IDTS API/Web 接入。 |
 
 所有实现必须保持 Domain 独立；不得把 ACadSharp、Avalonia、Blender 或具体 Tiles 转换器引入 `SceneBuilder.Domain`。运行时产物只可写入明确的作业输出目录或未来 `%LocalAppData%/SceneBuilder` 根，绝不写入仓库、`src/` 或 `tests/`。

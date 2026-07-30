@@ -24,7 +24,7 @@
                     job.json
 ```
 
-Project、Analysis、Plan Revision、Build Job 与 Artifact 是独立对象：源输入只读保存；分析可重建；计划修订永不覆盖旧版本；Build 只使用 `frozen-plan.json`；不同 Build Job 的工作目录和产物隔离；重新生成一定创建新作业。
+Project、Analysis、Plan Revision、Build Job 与 Artifact 是独立对象：源输入只读保存；分析可重建；计划修订永不覆盖旧版本；Build 只使用 `frozen-plan.json`；不同 Build Job 的工作目录和产物隔离；重新生成一定创建新作业。LARGE-00 的脱敏基准记录可作为 Build Job 证据保存，包含 SampleId、工具版本、指标和结果哈希，不保存图纸、绝对路径、Layer/Block 原文、资产或客户信息。
 
 ## 保存、恢复和安全
 

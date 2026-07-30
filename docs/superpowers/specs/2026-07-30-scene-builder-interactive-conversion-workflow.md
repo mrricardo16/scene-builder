@@ -20,7 +20,7 @@ Analyze 产生 `ConversionPlanDraft`。它是 UI 可编辑模型，不是原始 
 
 用户只能编辑有明确现有语义和验证规则的参数。输入解释可包含显式单位确认、局部原点策略、Z Offset、平面旋转、是否启用受控修复及其容差；用户覆盖必须记录来源和审计信息，只影响后续计划，不修改原始 CAD。规则编辑必须生成或修改现有严格规则契约，不能在 ViewModel 重写分类排序、允许任意脚本或绕过 `CadRuleEngine`。首版几何编辑限于当前已支持的 `Wall HeightMeters` 与 `Column HeightMeters`；厚度、道路宽度、洞口、屋顶和网格简化均为 Planned，不能提前伪造字段。
 
-资产映射复用显式 `AssetId`、确定性 Binding、Windows 安全文件读取和匿名暂存；禁止按 BlockName 猜文件名或扫描目录匹配任意 GLB。输出计划支持单体 GLB、Scene Package、3D Tiles，以及已有分区/tiles 参数和输出目录的范围校验。
+资产映射复用显式 `AssetId`、确定性 Binding、Windows 安全文件读取和匿名暂存；禁止按 BlockName 猜文件名或扫描目录匹配任意 GLB。输出计划支持单体 GLB、Scene Package、3D Tiles，以及已有分区/tiles 参数和输出目录的范围校验。大型厂区输出 Profile、HLOD、资源预算、优化、缓存和 Viewer 验收必须显式标为 Planned，待 LARGE-00 至 LARGE-04 逐项定义并验证；不能在计划模型中提前伪造可用能力。
 
 通过验证后，草稿生成不可变 `FrozenConversionPlan`。Build 只消费冻结快照；Blender 在用户调参期间不得读取可变 ViewModel。
 

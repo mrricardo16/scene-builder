@@ -12,7 +12,7 @@ Desktop 的主工作流是：1. 导入，2. 分析，3. 调整，4. 预览，5. 
 | 规则与分类 | 编辑现有严格规则契约，查看冲突和未分类对象 | Planned |
 | 几何参数 | 仅编辑现有 `HeightMeters` 等已支持语义 | Planned |
 | 资产绑定 | 显式 AssetId 与确定性 Binding | Planned |
-| 输出配置 | GLB、Package、Tiles 与现有输出参数 | Planned |
+| 输出配置 | GLB、Package、Tiles、分区参数与未来大厂区 Profile/预算 | Planned |
 | 生成进度 | 冻结后 Build 的阶段、进度、取消和日志 | Planned |
 | 项目/作业历史 | Project、Analysis、Plan Revision、Build Job、Artifact | Planned |
 | 系统检查和设置 | 工具配置与 Doctor | Planned |
@@ -28,4 +28,4 @@ Desktop 的主工作流是：1. 导入，2. 分析，3. 调整，4. 预览，5. 
 
 文件选择器可以列出 DWG 与 DXF，但行为必须由支持状态决定：DXF 已配置时可进入 Analyze；转换器未配置的 DWG 显示“DWG 转换器未配置”；闸门未通过的 DWG 显示“DWG 支持仍在验证”。后二者均不得创建或启动作业。
 
-UI 只发送 Application 请求并显示结果，不重写分类排序、不猜测单位、不修改原始 CAD，也不让 Blender 读取可变 ViewModel。状态必须区分分析、可编辑计划、冻结计划、构建和已验证产物；错误、取消或未配置工具不得显示为成功。
+UI 只发送 Application 请求并显示结果，不重写分类排序、不猜测单位、不修改原始 CAD，也不让 Blender 读取可变 ViewModel。状态必须区分分析、可编辑计划、冻结计划、构建和已验证产物；错误、取消或未配置工具不得显示为成功。大厂区输出区只能展示 `Target`、`Validated` 或 `Unverified` 证据；HLOD、优化、缓存和 Viewer 指标未实现前不可作为可点击的产品配置。
