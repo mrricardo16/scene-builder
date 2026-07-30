@@ -10,5 +10,6 @@
     <ProjectReference Include="..\..\src\SceneBuilder.Blender\SceneBuilder.Blender.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Domain\SceneBuilder.Domain.csproj" />
     <ProjectReference Include="..\..\src\SceneBuilder.Pipeline\SceneBuilder.Pipeline.csproj" />
+    <ProjectReference Include="..\..\src\SceneBuilder.Tiles\SceneBuilder.Tiles.csproj" />
   </ItemGroup>
 </Project>

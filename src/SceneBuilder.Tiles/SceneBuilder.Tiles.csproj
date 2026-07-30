@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SceneBuilder.Domain\SceneBuilder.Domain.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Pipeline\SceneBuilder.Pipeline.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Blender\SceneBuilder.Blender.csproj" />
   </ItemGroup>
 
 </Project>

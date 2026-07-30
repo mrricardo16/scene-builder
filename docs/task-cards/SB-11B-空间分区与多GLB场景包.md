@@ -11,3 +11,7 @@
 - Index 仅引用已验证相对产物；staging 通过验证后原子发布。
 - 分区失败隔离；仅显式允许时发布部分包；取消不发布。
 - 不修改 SceneDraft、源资产、JobReport v0；不实现缓存、并行、LOD 或 3D Tiles。
+
+## SB-12A 交接
+
+SB-12A 只消费本卡发布的 `scene-package.json` 与 `partitions/*.glb`。Tileset Leaf 必须使用已验证分区的 `ContentBounds` 和原始相对 artifactPath；不得重跑分区、Blender 或修改本卡的场景包产物。

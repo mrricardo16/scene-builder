@@ -3,12 +3,13 @@ using SceneBuilder.Application;
 using SceneBuilder.Blender;
 using SceneBuilder.Domain;
 using SceneBuilder.Pipeline;
+using SceneBuilder.Tiles;
 
 var blenderPath = ArgumentValue(args, "--blender") ?? @"D:\tool\Blender\blender.exe";
 var mode = ArgumentValue(args, "--mode") ?? "scene";
-if (mode is not ("scene" or "package"))
+if (mode is not ("scene" or "package" or "tileset"))
 {
-    throw new ArgumentException("The --mode value must be scene or package.");
+    throw new ArgumentException("The --mode value must be scene, package, or tileset.");
 }
 var temporaryDirectory = Path.Combine(Path.GetTempPath(), "scene-builder-smoke-" + Guid.NewGuid().ToString("N"));
 var cleaned = false;
@@ -93,7 +94,7 @@ try
     };
     var toolOptions = new BlenderToolOptions { ExecutablePath = blenderPath, Timeout = TimeSpan.FromMinutes(10), MaximumProcessOutputCharacters = 16_384 };
     var assetGeneration = new BlenderAssetGenerationContext { AssetRootDirectory = sourceRoot, Configuration = configuration };
-    if (mode is "package")
+    if (mode is "package" or "tileset")
     {
         var packageDraft = new SceneDraft
         {
@@ -117,6 +118,26 @@ try
 
         Console.WriteLine("Scene package generation: passed (2 regular + 1 global)");
         Console.WriteLine("Package GLB validation: passed (3)");
+        if (mode is "package")
+        {
+            return;
+        }
+
+        var tilesetResult = await new TilesetGenerator().GenerateAsync(new TilesetGenerationRequest
+        {
+            ScenePackageDirectory = packageResult.PackagePath,
+            Policy = new TilesetGenerationPolicy { RootGeometricErrorMeters = 100d, MinimumBoundingHalfExtentMeters = 0.001d }
+        }, CancellationToken.None);
+        if (tilesetResult.Status is not TilesetGenerationStatus.Succeeded || tilesetResult.TilesetPath is null || tilesetResult.IncludedPartitionCount != 3 || !(await new TilesetValidator().ValidateAsync(packageResult.PackagePath, tilesetResult.TilesetPath, CancellationToken.None)).IsValid)
+        {
+            throw new InvalidOperationException($"Tileset generation or validation failed: {tilesetResult.Status}; {string.Join(',', tilesetResult.Diagnostics.Select(diagnostic => diagnostic.Code))}");
+        }
+
+        Console.WriteLine("SCENEBUILDER_TILESET_STATUS:SUCCEEDED");
+        Console.WriteLine("SCENEBUILDER_TILESET_VERSION:1.1");
+        Console.WriteLine("SCENEBUILDER_TILESET_LEAVES:3");
+        Console.WriteLine("SCENEBUILDER_TILESET_GLB_VALID:3");
+        Console.WriteLine("SCENEBUILDER_TILESET_VALID:true");
         return;
     }
 

@@ -67,19 +67,23 @@ public sealed class ScenePackageValidator
 
     internal static bool IsValidIndex(ScenePackageIndex index) => index.ContractVersion == "1.0" && index.Unit == "meters" &&
         index.Partitions.Count > 0 &&
-        index.Partitions.All(item => !string.IsNullOrWhiteSpace(item.Id) && Enum.IsDefined(item.Status) && item.Status is ScenePackagePartitionStatus.Succeeded) &&
+        index.Partitions.All(item => !string.IsNullOrWhiteSpace(item.Id) && Enum.IsDefined(item.Status)) &&
+        index.Partitions.Any(item => item.Status is ScenePackagePartitionStatus.Succeeded) &&
         index.Partitions.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() == index.Partitions.Count &&
-        index.Partitions.Select(item => item.ArtifactPath).Distinct(StringComparer.Ordinal).Count() == index.Partitions.Count &&
-        index.Partitions.All(item => IsSafeRelativeArtifactPath(item.ArtifactPath) && item.ProceduralCount >= 0 && item.StaticAssetCount >= 0 && item.DynamicAssetCount >= 0) &&
+        index.Partitions.Where(item => item.Status is ScenePackagePartitionStatus.Succeeded).Select(item => item.ArtifactPath).Distinct(StringComparer.Ordinal).Count() == index.Partitions.Count(item => item.Status is ScenePackagePartitionStatus.Succeeded) &&
+        index.Partitions.All(item => item.Status is not ScenePackagePartitionStatus.Succeeded || IsSafeRelativeArtifactPath(item.ArtifactPath)) &&
+        index.Partitions.All(item => item.Status is ScenePackagePartitionStatus.Succeeded || item.ArtifactPath is null) &&
+        index.Partitions.All(item => item.ProceduralCount >= 0 && item.StaticAssetCount >= 0 && item.DynamicAssetCount >= 0) &&
         index.Partitions.All(item => item.Id is "partition-global" ? item.XIndex is null && item.YIndex is null : item.XIndex is not null && item.YIndex is not null) &&
         index.DynamicNodes.All(item => !string.IsNullOrWhiteSpace(item.SemanticObjectId) && !string.IsNullOrWhiteSpace(item.PartitionId)) &&
         index.DynamicNodes.Select(item => item.SemanticObjectId).Distinct(StringComparer.Ordinal).Count() == index.DynamicNodes.Count &&
-        index.DynamicNodes.All(item => index.Partitions.Any(partition => partition.Id == item.PartitionId));
+        index.DynamicNodes.All(item => index.Partitions.Any(partition => partition.Id == item.PartitionId && partition.Status is ScenePackagePartitionStatus.Succeeded));
 
     internal static bool IsSafeRelativeArtifactPath(string? value) => !string.IsNullOrWhiteSpace(value) &&
         !Path.IsPathRooted(value) &&
         !value.Contains("..", StringComparison.Ordinal) &&
         value.IndexOfAny(['\\']) < 0 &&
+        value.Split('/').All(segment => !string.IsNullOrWhiteSpace(segment)) &&
         value.StartsWith("partitions/", StringComparison.Ordinal) &&
         value.EndsWith(".glb", StringComparison.OrdinalIgnoreCase);
 

@@ -37,3 +37,7 @@ Pipeline 先创建唯一受控 staging sibling，拒绝不安全 PackageName、�
 Domain 测试冻结边界、负坐标、最大边界、ID、对象唯一归属、跨区/Global、无效输入、派生 Draft 与确定性。Application 使用 Fake Blender 覆盖全成、分区失败、部分发布、取消、超时、非法 GLB、Index 与原子发布；Package Validator 复用 `BinaryGlbValidator`。SmokeTest 的 package 模式使用真实 Blender，生成至少两个常规分区和一个 Global 分区，验证每个 GLB、Index 和清理。
 
 规划不创建空 Cell：对象索引和归属为 O(N)，排序 O(N log N)，Blender 为 P 次串行调用。SB-11B 不承诺增量重建或内容哈希复用。
+
+## SB-12A 衔接
+
+SB-12A 只读取已发布的 `scene-package.json` 与 `partitions/*.glb`，以 `ContentBounds`（而不是 `CellBounds`）构建 3D Tiles 1.1 Root + Leaf 索引。它不会重跑本设计中的 Planner、Draft Factory 或 Blender；失败分区没有 artifactPath，不能进入 Tileset。
