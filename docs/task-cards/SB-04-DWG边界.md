@@ -1,22 +1,5 @@
-# SB-04：DWG 边界闸门
+# SB-04：DWG 边界（历史基线）
 
-## 目标
+本卡记录的结论已由 [CAD-DWG-01：DWG 适配与支持闸门](CAD-DWG-01-DWG适配与支持闸门.md) 接替为当前路线。当前 DWG 仍为 Unsupported/ContinueValidation：直接读取真实样本超时，受控 DWG→DXF 与 ezdxf 仅有 POC 正向证据。
 
-在未验证 DWG 实现前，显式报告不支持而非暗中转换。
-
-## 通过闸门
-
-- `IDwgInspector` 使用带 `CancellationToken` 的探测接口。
-- `UnsupportedDwgProbe` 返回 `DwgProbeStatus.Unsupported` 和 `DWG_UNSUPPORTED` 诊断。
-- 产品路径不解析 DWG、不运行转换程序、不生成 DWG 输出。
-- 仅在获得单独授权时，可在私有、隔离、限时的 POC 中调用候选读取器或受控离线转换器；POC 的成功或失败均不得改变产品支持状态，且不得提交源图纸、转换产物或敏感日志。
-
-## 当前状态
-
-明确未支持；直接读取在 30 秒内超时。修正 Core Console 的脚本提示顺序、对话变量和 ASCII 输出路径后，私有 POC 已能生成结构完整的 DXF，但现有 ACadSharp 检查器在 10 分钟内未完成解析，结论仍为 `continue-validation`。任何“DWG 已支持”声明必须以独立实现、真实样本和回归测试为前提。
-
-## 追溯
-
-| 输入 | 稳定契约 | 测试 | 产物 | 证据 |
-| --- | --- | --- | --- | --- |
-| DWG 样本元数据与探针配置 | `IDwgInspector`、`DwgProbeStatus` | 未配置、取消、许可拒绝 | 探针报告 | [POC 决策记录](../工具选型与POC决策记录.md)；通过前为 Unsupported |
+本卡不再是实施入口；不得依据它宣称 DWG 已支持。
