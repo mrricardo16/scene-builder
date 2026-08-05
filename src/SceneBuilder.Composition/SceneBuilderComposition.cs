@@ -26,7 +26,9 @@ public static class SceneBuilderComposition
             new DxfCadInputAdapter(new ACadSharpDxfInspector(), new ACadSharpDxfGeometryExtractor()),
             new UnsupportedDwgCadInputAdapter(new UnsupportedDwgProbe())
         ],
-        outputRootPolicy);
+        outputRootPolicy,
+        snapshotFactory: new CadBuildInputSnapshotFactory(),
+        snapshotSerializer: new CadBuildInputSnapshotSerializer());
         return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, new ConversionPlanService(outputRootPolicy), new BuildFrozenPlanHandler(outputRootPolicy));
     }
 
@@ -37,6 +39,8 @@ public static class SceneBuilderComposition
         new SceneCapability { Code = "CLI_FRAMEWORK", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "ANALYZE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "DXF_ANALYZE", State = SceneCapabilityState.Available },
+        new SceneCapability { Code = "ANALYSIS_BUILD_SNAPSHOT", State = SceneCapabilityState.Available },
+        new SceneCapability { Code = "BUILD", State = SceneCapabilityState.Planned },
         new SceneCapability { Code = "PLAN_CREATE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "PLAN_VALIDATE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "PLAN_FREEZE", State = SceneCapabilityState.Available },

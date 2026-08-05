@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace SceneBuilder.Domain;
 
 public enum CadCurveDirection
@@ -79,6 +81,10 @@ public sealed record CadGeometryTolerance
     }
 }
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(CadLineSegment2), "line")]
+[JsonDerivedType(typeof(CadArcSegment2), "arc")]
+[JsonDerivedType(typeof(CadGeneratedLineSegment2), "generated-line")]
 public abstract record CadCurveSegment2
 {
     protected CadCurveSegment2(
@@ -258,6 +264,9 @@ public sealed record CadContourDiagnostic
     public string Subject { get; init; } = string.Empty;
 }
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(CadSegmentContour), "segment")]
+[JsonDerivedType(typeof(CadCircleContour), "circle")]
 public abstract record CadContour
 {
     public string Id { get; init; } = string.Empty;

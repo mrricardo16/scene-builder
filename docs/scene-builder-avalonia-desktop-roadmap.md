@@ -2,7 +2,7 @@
 
 ## 重基线
 
-本路线图面向“导入、分析、调整、生成、预览、发布”的 Windows 本地场景构建产品。它以现有底层能力为起点，但不把底层测试、SmokeTest 或 POC 表述为已有 Desktop 产品。当前没有 Avalonia 项目、完整转换 CLI 或真实 Analyze/Plan/Build 入口；CORE-01 已提供其共用的 Application Host、能力注册表与 CLI 框架。
+本路线图面向“导入、分析、调整、生成、预览、发布”的 Windows 本地场景构建产品。它以现有底层能力为起点，但不把底层测试、SmokeTest 或 POC 表述为已有 Desktop 产品。当前没有 Avalonia 项目或完整转换 CLI；CORE-01 已提供共用 Host，CORE-02/03/04A 已提供受限 Analyze、Plan 和版本化 Build Input Snapshot，CORE-04B/04C 仍未实现。
 
 DXF 是第一条验收路径。DWG 是产品目标输入，但在受控转换器、许可、取消、超时、Xref、代理对象和真实样本闸门完成前保持 Unsupported。单体 GLB、Scene Package 和本地 Cartesian 3D Tiles 1.1 是可选择输出；内嵌预览均需独立 POC。
 
@@ -12,7 +12,9 @@ DXF 是第一条验收路径。DWG 是产品目标输入，但在受控转换器
 flowchart LR
   C1["CORE-01 统一应用入口"] --> C2["CORE-02 CAD 导入分析"]
   C2 --> C3["CORE-03 可编辑 Conversion Plan"]
-  C3 --> C4["CORE-04 从 Frozen Plan 构建"]
+  C3 --> C4A["CORE-04A Analysis Build Snapshot"]
+  C4A --> C4B["CORE-04B Build-Ready Frozen Plan"]
+  C4B --> C4["CORE-04C 从 Frozen Plan 构建"]
   DXF["CAD-DXF-01 DXF 支持闸门"] --> C2
   DWG["CAD-DWG-01 DWG 适配与闸门"] --> C2
   POC["DESKTOP-00 预览技术验证"] --> D1["DESKTOP-01 Avalonia 宿主与 DI"]
@@ -39,14 +41,16 @@ flowchart LR
 
 | 顺序 | 任务 | 退出条件 |
 | --- | --- | --- |
-| 1 | CORE-01 共享 Application Host 与 CLI 框架 | CLI 与未来 Desktop 复用同一 Host；doctor/capabilities 可用；进度、取消、能力与相对产物契约明确；不实现真实转换。 |
+| 1 | CORE-01 共享 Application Host 与 CLI 框架 | CLI 与未来 Desktop 复用同一 Host；doctor/capabilities 可用；进度、取消、能力与相对产物契约明确。 |
 | 2 | CORE-02 CAD 导入分析 | 可返回受控 `CadImportAnalysisResult`，分析不启动 Blender。 |
 | 3 | CORE-03 可编辑 Conversion Plan | Analysis → Draft → Validation → Frozen Plan 具备版本和确定性。 |
-| 4 | CORE-04 Frozen Plan 构建 | 冻结计划可选择生成 GLB、Scene Package、3D Tiles。 |
+| 4 | CORE-04A Analysis Build Snapshot | Analysis v2 和 Snapshot v1 可验证、可确定性回读；Frozen Plan v1 仍被 Gate 拒绝。 |
+| 5 | CORE-04B Build-Ready Frozen Plan | Snapshot、规则与完整语义配置绑定到 Frozen Plan v2。 |
+| 6 | CORE-04C Frozen Plan 构建 | 仅消费 Build-Ready Frozen Plan 生成 GLB、Scene Package、3D Tiles。 |
 | 并行 | CAD-DXF-01 | 真实匿名 DXF、重复性、取消与实体覆盖完成支持闸门。 |
 | 并行 | CAD-DWG-01 | DWG Adapter 和受控转换的许可、Xref、代理对象、取消、超时与真实样本闸门完成。 |
-| 5 | DESKTOP-00 | 分别验证二维 CAD、GLB WebView、3D Tiles WebView，失败有受控回退。 |
-| 6 | DESKTOP-01 至 09 | 按任务卡依次交付宿主、工作台、输出、历史、预览与发布。 |
+| 7 | DESKTOP-00 | 分别验证二维 CAD、GLB WebView、3D Tiles WebView，失败有受控回退。 |
+| 8 | DESKTOP-01 至 09 | 按任务卡依次交付宿主、工作台、输出、历史、预览与发布。 |
 | 大厂区 | LARGE-00 至 04 | 在 CORE-04 后，以真实样本、HLOD、优化、缓存和 Viewer 验收逐步推进；SB-12A 仅为输入基础。 |
 | 最后 | INTEGRATION-01 | 仅在统一 Application 服务和 Desktop 稳定后评估 IDTS API/Web 接入。 |
 

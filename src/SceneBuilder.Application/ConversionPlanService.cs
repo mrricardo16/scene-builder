@@ -168,9 +168,9 @@ public sealed class ConversionPlanService(IOutputRootPolicy outputRootPolicy) : 
         var text = await File.ReadAllTextAsync(path, Utf8, token);
         using var document = JsonDocument.Parse(text);
         var root = document.RootElement;
-        if (root.ValueKind is not JsonValueKind.Object || root.GetProperty("contractVersion").GetString() != "1.0" || root.GetProperty("analysisId").GetString() is not { Length: > 0 } id || root.GetProperty("sourceFingerprint").GetString() is not { Length: > 0 } fingerprint || root.GetProperty("status").GetString() is not "succeeded" || root.GetProperty("artifacts").ValueKind is not JsonValueKind.Array) return null;
-        var artifact = root.GetProperty("artifacts").EnumerateArray().SingleOrDefault();
-        if (artifact.ValueKind is not JsonValueKind.Object || artifact.GetProperty("kind").GetString() != "analysis" || artifact.GetProperty("relativePath").GetString() != "analysis/cad-analysis.json" || !artifact.GetProperty("isValidated").GetBoolean()) return null;
+        if (root.ValueKind is not JsonValueKind.Object || root.GetProperty("contractVersion").GetString() is not ("1.0" or "2.0") || root.GetProperty("analysisId").GetString() is not { Length: > 0 } id || root.GetProperty("sourceFingerprint").GetString() is not { Length: > 0 } fingerprint || root.GetProperty("status").GetString() is not "succeeded" || root.GetProperty("artifacts").ValueKind is not JsonValueKind.Array) return null;
+        var artifact = root.GetProperty("artifacts").EnumerateArray().FirstOrDefault(item => item.ValueKind is JsonValueKind.Object && item.GetProperty("kind").GetString() == "analysis");
+        if (artifact.ValueKind is not JsonValueKind.Object || artifact.GetProperty("relativePath").GetString() != "analysis/cad-analysis.json" || !artifact.GetProperty("isValidated").GetBoolean()) return null;
         var unit = root.GetProperty("input").GetProperty("unit").GetString();
         if (!Enum.TryParse<CadUnit>(unit, true, out var sourceUnit)) return null;
         return new AnalysisIdentity(id, fingerprint, sourceUnit);

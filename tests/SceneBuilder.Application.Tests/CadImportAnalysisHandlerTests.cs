@@ -23,7 +23,7 @@ public sealed class CadImportAnalysisHandlerTests
                 CancellationToken.None);
 
             Assert.Equal(SceneOperationStatus.Succeeded, result.Status);
-            var artifact = Assert.Single(result.Artifacts);
+            var artifact = Assert.Single(result.Artifacts.Where(item => item.Kind is SceneArtifactKind.Analysis));
             Assert.Equal(SceneArtifactKind.Analysis, artifact.Kind);
             Assert.Equal("analysis/cad-analysis.json", artifact.RelativePath);
             Assert.True(artifact.IsValidated);

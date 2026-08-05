@@ -19,19 +19,25 @@ public sealed class CadImportAnalysisHandler : ISceneOperationHandler<CadImportA
     private readonly IOutputRootPolicy _outputRootPolicy;
     private readonly CadRuleSetJsonLoader _ruleSetLoader;
     private readonly CadRuleEngine _ruleEngine;
+    private readonly CadBuildInputSnapshotFactory _snapshotFactory;
+    private readonly CadBuildInputSnapshotSerializer _snapshotSerializer;
     private readonly ICadInputAdapter[] _adapters;
 
     public CadImportAnalysisHandler(
         IEnumerable<ICadInputAdapter> adapters,
         IOutputRootPolicy outputRootPolicy,
         CadRuleSetJsonLoader? ruleSetLoader = null,
-        CadRuleEngine? ruleEngine = null)
+        CadRuleEngine? ruleEngine = null,
+        CadBuildInputSnapshotFactory? snapshotFactory = null,
+        CadBuildInputSnapshotSerializer? snapshotSerializer = null)
     {
         ArgumentNullException.ThrowIfNull(adapters);
         _adapters = adapters.OrderBy(adapter => adapter.AdapterId, StringComparer.Ordinal).ToArray();
         _outputRootPolicy = outputRootPolicy ?? throw new ArgumentNullException(nameof(outputRootPolicy));
         _ruleSetLoader = ruleSetLoader ?? new CadRuleSetJsonLoader();
         _ruleEngine = ruleEngine ?? new CadRuleEngine();
+        _snapshotFactory = snapshotFactory ?? new CadBuildInputSnapshotFactory();
+        _snapshotSerializer = snapshotSerializer ?? new CadBuildInputSnapshotSerializer();
     }
 
     public async Task<CadImportAnalysisResult> ExecuteAsync(
@@ -112,13 +118,36 @@ public sealed class CadImportAnalysisHandler : ISceneOperationHandler<CadImportA
                 };
             }
 
-            var result = CreateResult(adapterResult, descriptor, fingerprint, classification) with
+            var provisional = CreateResult(adapterResult, descriptor, fingerprint, classification);
+            Report(progress, "ANALYZE_BUILD_SNAPSHOT");
+            var snapshot = _snapshotFactory.Create(provisional.AnalysisId, fingerprint, adapterResult, classification, provisional.Diagnostics, cancellationToken);
+            Report(progress, "ANALYZE_VALIDATE_BUILD_SNAPSHOT");
+            CadBuildInputSnapshotValidator.Validate(snapshot);
+            var result = provisional with
             {
-                Artifacts = [new SceneArtifactDescriptor { Kind = SceneArtifactKind.Analysis, RelativePath = "analysis/cad-analysis.json", IsValidated = true }]
+                BuildInputSnapshot = new CadBuildInputSnapshotDescriptor { Status = CadBuildInputSnapshotStatus.Available, ContractVersion = snapshot.ContractVersion, SnapshotId = snapshot.SnapshotId, ContentHash = snapshot.ContentHash, RelativePath = "analysis/build-input-snapshot.json" },
+                Artifacts = [new SceneArtifactDescriptor { Kind = SceneArtifactKind.Analysis, RelativePath = "analysis/cad-analysis.json", IsValidated = true }, new SceneArtifactDescriptor { Kind = SceneArtifactKind.BuildInputSnapshot, RelativePath = "analysis/build-input-snapshot.json", IsValidated = true }]
             };
-            Report(progress, "ANALYZE_WRITE_RESULT");
+            CadBuildInputSnapshotDescriptorValidator.Validate(result.BuildInputSnapshot);
+            Report(progress, "ANALYZE_WRITE_BUILD_SNAPSHOT");
             cancellationToken.ThrowIfCancellationRequested();
-            WriteArtifact(outputRoot, result, cancellationToken);
+            var snapshotPath = Path.Combine(outputRoot, "analysis", "build-input-snapshot.json");
+            try
+            {
+                await _snapshotSerializer.WriteValidatedAsync(outputRoot, snapshot, cancellationToken);
+                Report(progress, "ANALYZE_WRITE_RESULT");
+                WriteArtifact(outputRoot, result, cancellationToken);
+            }
+            catch
+            {
+                if (File.Exists(snapshotPath))
+                {
+                    File.Delete(snapshotPath);
+                }
+
+                throw;
+            }
+
             Report(progress, "ANALYZE_VALIDATE_RESULT");
             cancellationToken.ThrowIfCancellationRequested();
             Report(progress, "ANALYZE_COMPLETED", 100d);

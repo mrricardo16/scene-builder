@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace SceneBuilder.Domain;
 
 public sealed record CadPoint3
@@ -72,6 +74,12 @@ public sealed record CadPolylineVertex
     public double Bulge { get; }
 }
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(CadLineGeometry), "line")]
+[JsonDerivedType(typeof(CadPolylineGeometry), "polyline")]
+[JsonDerivedType(typeof(CadArcGeometry), "arc")]
+[JsonDerivedType(typeof(CadCircleGeometry), "circle")]
+[JsonDerivedType(typeof(CadInsertGeometry), "insert")]
 public abstract record CadGeometryEntity
 {
     protected CadGeometryEntity(int sourceOrder, string layerName, string entityType, CadBounds? bounds)

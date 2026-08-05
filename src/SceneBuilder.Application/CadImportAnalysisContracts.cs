@@ -133,11 +133,13 @@ public sealed record CadImportClassificationSummary
 
 public sealed record CadImportAnalysisResult
 {
-    public string ContractVersion { get; init; } = "1.0";
+    public string ContractVersion { get; init; } = "2.0";
 
     public string AnalysisId { get; init; } = string.Empty;
 
     public string SourceFingerprint { get; init; } = string.Empty;
+
+    public CadBuildInputSnapshotDescriptor BuildInputSnapshot { get; init; } = new();
 
     public SceneOperationStatus Status { get; init; }
 

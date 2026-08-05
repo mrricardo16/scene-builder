@@ -37,7 +37,8 @@ public enum SceneArtifactKind
     Tileset = 5,
     Report = 6,
     Log = 7,
-    PlanValidation = 8
+    PlanValidation = 8,
+    BuildInputSnapshot = 9
 }
 
 public sealed record SceneOperationProgress

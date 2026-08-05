@@ -80,6 +80,8 @@ public static class CliOutputWriter
         $"Entities: {result.Structure.EntityTypes.Sum(entityType => entityType.EntityCount)}",
         $"Valid contours: {result.Geometry.ValidContourCount}",
         $"Unclassified: {result.Classification.UnclassifiedCount}",
+        $"Build snapshot / 构建快照: {result.BuildInputSnapshot.Status}",
+        $"Snapshot artifact / 快照产物: {result.BuildInputSnapshot.RelativePath ?? "None"}",
         $"Artifact: {result.Artifacts.FirstOrDefault()?.RelativePath ?? "None"}"
     ]);
 
