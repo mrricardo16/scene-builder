@@ -4,7 +4,8 @@
 
 - CORE-04 Gate：Completed。Frozen Plan v1 仍会被 `FROZEN_PLAN_NOT_BUILD_READY` 拒绝。
 - CORE-04A：Implemented。Analyze v2 发布经校验的 Build Input Snapshot v1；它不使 Frozen Plan v1 Build Ready。
-- CORE-04B、CORE-04C：Planned。不得在 04A 中创建 SceneDraft、启动 Blender 或生成任何三维产物。
+- CORE-04B：Completed。已实现 Analysis/Snapshot 绑定、完整配置冻结、资源导入和 Readiness Gate；不得把 Ready 误报为 Build Available。
+- CORE-04C：Planned。不得在 04A 或 04B 中创建 SceneDraft、启动 Blender 或生成任何三维产物。
 
 ## 目标
 

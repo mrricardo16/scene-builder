@@ -114,21 +114,38 @@ public sealed class SceneBuilderCliApplication(
 
     private async Task<int> WriteDraftAsync(string operation, ConversionPlanDraftResult result, CliOutputFormat format)
     {
-        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = "1.0", operation, status = result.Status, planId = result.Draft?.PlanId, revision = result.Draft?.Revision, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText(operation, result.Draft?.PlanId ?? "Unknown", result.Draft?.Revision ?? 0, result.Status.ToString(), result.Artifacts, result.Diagnostics);
+        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = result.Draft?.ContractVersion ?? "1.0", operation, status = result.Status, planId = result.Draft?.PlanId, revision = result.Draft?.Revision, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText(operation, result.Draft?.PlanId ?? "Unknown", result.Draft?.Revision ?? 0, result.Status.ToString(), result.Artifacts, result.Diagnostics);
         await _standardOutput.WriteLineAsync(output);
         return Exit(result.Status);
     }
 
     private async Task<int> WriteValidationAsync(ConversionPlanValidationResult result, CliOutputFormat format)
     {
-        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = "1.0", operation = "planValidate", status = result.Status, planId = result.PlanId, revision = result.Revision, validationStatus = result.ValidationStatus, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText("planValidate", result.PlanId, result.Revision, result.ValidationStatus.ToString(), result.Artifacts, result.Diagnostics);
+        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = result.ContractVersion, operation = "planValidate", status = result.Status, planId = result.PlanId, revision = result.Revision, validationStatus = result.ValidationStatus, snapshotId = result.SnapshotId, snapshotContentHash = result.SnapshotContentHash, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText("planValidate", result.PlanId, result.Revision, result.ValidationStatus.ToString(), result.Artifacts, result.Diagnostics);
         await _standardOutput.WriteLineAsync(output);
         return Exit(result.Status);
     }
 
     private async Task<int> WriteFrozenAsync(FrozenConversionPlanResult result, CliOutputFormat format)
     {
-        var output = format is CliOutputFormat.Json ? CliOutputWriter.SerializePlanJson(new { contractVersion = "1.0", operation = "planFreeze", status = result.Status, planId = result.FrozenPlan?.Draft.PlanId, revision = result.FrozenPlan?.Draft.Revision, artifacts = result.Artifacts, diagnostics = result.Diagnostics }) : CliOutputWriter.FormatPlanText("planFreeze", result.FrozenPlan?.Draft.PlanId ?? "Unknown", result.FrozenPlan?.Draft.Revision ?? 0, result.Status.ToString(), result.Artifacts, result.Diagnostics);
+        var plan = result.FrozenPlan;
+        var planId = plan?.Identity?.PlanId ?? plan?.Draft?.PlanId ?? "Unknown";
+        var revision = plan?.Identity?.Revision ?? plan?.Draft?.Revision ?? 0;
+        var output = format is CliOutputFormat.Json
+            ? CliOutputWriter.SerializePlanJson(new
+            {
+                planContractVersion = plan?.ContractVersion ?? "1.0",
+                operation = "planFreeze",
+                status = result.Status,
+                planId,
+                revision,
+                snapshotId = plan?.BuildInput?.SnapshotId,
+                snapshotContentHash = plan?.BuildInput?.SnapshotContentHash,
+                buildReadiness = result.BuildReadiness,
+                artifacts = result.Artifacts,
+                diagnostics = result.Diagnostics
+            })
+            : CliOutputWriter.FormatPlanText("planFreeze", planId, revision, result.Status.ToString(), result.Artifacts, result.Diagnostics);
         await _standardOutput.WriteLineAsync(output);
         return Exit(result.Status);
     }

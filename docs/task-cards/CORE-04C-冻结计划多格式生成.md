@@ -2,7 +2,7 @@
 
 ## 状态
 
-Planned。依赖 CORE-04B 的 Build-Ready Frozen Plan v2。
+Planned。依赖 CORE-04B 已交付的 Build-Ready Frozen Plan v2；本卡尚未实现。
 
 ## 输入与目标
 

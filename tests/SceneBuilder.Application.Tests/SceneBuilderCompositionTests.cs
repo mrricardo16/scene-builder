@@ -27,6 +27,7 @@ public sealed class SceneBuilderCompositionTests
             "PLAN_CREATE",
             "PLAN_VALIDATE",
             "PLAN_FREEZE",
+            "BUILD_READY_FROZEN_PLAN",
             "BUILD_GLB",
             "BUILD_SCENE_PACKAGE",
             "BUILD_3D_TILES",

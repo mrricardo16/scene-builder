@@ -4,10 +4,19 @@ using SceneBuilder.Domain;
 
 namespace SceneBuilder.Application;
 
-public sealed class BuildFrozenPlanHandler(IOutputRootPolicy outputRootPolicy) : ISceneOperationHandler<BuildFrozenPlanRequest, SceneBuildResult>
+public sealed class BuildFrozenPlanHandler : ISceneOperationHandler<BuildFrozenPlanRequest, SceneBuildResult>
 {
     private static readonly UTF8Encoding Utf8 = new(false, true);
-    private readonly IOutputRootPolicy _outputRootPolicy = outputRootPolicy ?? throw new ArgumentNullException(nameof(outputRootPolicy));
+    private readonly IOutputRootPolicy _outputRootPolicy;
+    private readonly FrozenPlanV2Serializer _serializer;
+    private readonly FrozenPlanBuildReadinessValidator _readinessValidator;
+
+    public BuildFrozenPlanHandler(IOutputRootPolicy outputRootPolicy, FrozenPlanV2Serializer? serializer = null, FrozenPlanBuildReadinessValidator? readinessValidator = null)
+    {
+        _outputRootPolicy = outputRootPolicy ?? throw new ArgumentNullException(nameof(outputRootPolicy));
+        _serializer = serializer ?? new FrozenPlanV2Serializer();
+        _readinessValidator = readinessValidator ?? new FrozenPlanBuildReadinessValidator(new ConversionPlanRuleSetSnapshotter());
+    }
 
     public async Task<SceneBuildResult> ExecuteAsync(BuildFrozenPlanRequest request, IProgress<SceneOperationProgress>? progress, CancellationToken cancellationToken)
     {
@@ -22,7 +31,11 @@ public sealed class BuildFrozenPlanHandler(IOutputRootPolicy outputRootPolicy) :
             using var document = JsonDocument.Parse(await File.ReadAllTextAsync(frozenPath, Utf8, cancellationToken));
             var root = document.RootElement;
             if (root.ValueKind is not JsonValueKind.Object || root.GetProperty("contractVersion").GetString() != "2.0" || root.GetProperty("frozenPlanId").GetString() is not { Length: > 0 }) return Failed("FROZEN_PLAN_NOT_BUILD_READY");
-            return Failed("FROZEN_PLAN_BUILD_CONFIGURATION_MISSING");
+            if (!root.TryGetProperty("buildInput", out _)) return Failed("FROZEN_PLAN_BUILD_SNAPSHOT_MISSING");
+            if (!root.TryGetProperty("buildConfiguration", out _)) return Failed("FROZEN_PLAN_BUILD_CONFIGURATION_MISSING");
+            var plan = await _serializer.ReadValidatedAsync(frozenPath, cancellationToken);
+            var readiness = await _readinessValidator.ValidateAsync(plan, rootValidation.NormalizedPath, cancellationToken);
+            return readiness.Status is FrozenPlanBuildReadinessStatus.Ready ? Failed("BUILD_NOT_IMPLEMENTED") : new SceneBuildResult { Status = SceneOperationStatus.Failed, Diagnostics = readiness.Diagnostics };
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

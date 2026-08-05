@@ -2,7 +2,7 @@
 
 ## 重基线
 
-本路线图面向“导入、分析、调整、生成、预览、发布”的 Windows 本地场景构建产品。它以现有底层能力为起点，但不把底层测试、SmokeTest 或 POC 表述为已有 Desktop 产品。当前没有 Avalonia 项目或完整转换 CLI；CORE-01 已提供共用 Host，CORE-02/03/04A 已提供受限 Analyze、Plan 和版本化 Build Input Snapshot，CORE-04B/04C 仍未实现。
+本路线图面向“导入、分析、调整、生成、预览、发布”的 Windows 本地场景构建产品。它以现有底层能力为起点，但不把底层测试、SmokeTest 或 POC 表述为已有 Desktop 产品。当前没有 Avalonia 项目或完整转换 CLI；CORE-01 已提供共用 Host，CORE-02/03/04A 已提供受限 Analyze、Plan 和版本化 Build Input Snapshot，CORE-04B 已提供 Build-ready Frozen Plan 数据链路，CORE-04C 仍未实现。
 
 DXF 是第一条验收路径。DWG 是产品目标输入，但在受控转换器、许可、取消、超时、Xref、代理对象和真实样本闸门完成前保持 Unsupported。单体 GLB、Scene Package 和本地 Cartesian 3D Tiles 1.1 是可选择输出；内嵌预览均需独立 POC。
 
@@ -45,8 +45,8 @@ flowchart LR
 | 2 | CORE-02 CAD 导入分析 | 可返回受控 `CadImportAnalysisResult`，分析不启动 Blender。 |
 | 3 | CORE-03 可编辑 Conversion Plan | Analysis → Draft → Validation → Frozen Plan 具备版本和确定性。 |
 | 4 | CORE-04A Analysis Build Snapshot | Analysis v2 和 Snapshot v1 可验证、可确定性回读；Frozen Plan v1 仍被 Gate 拒绝。 |
-| 5 | CORE-04B Build-Ready Frozen Plan | Snapshot、规则与完整语义配置绑定到 Frozen Plan v2。 |
-| 6 | CORE-04C Frozen Plan 构建 | 仅消费 Build-Ready Frozen Plan 生成 GLB、Scene Package、3D Tiles。 |
+| 5 | CORE-04B Build-Ready Frozen Plan | Snapshot、规则与完整语义配置绑定到 Frozen Plan v2；Readiness Available 不等于 Build Available。 |
+| 6 | CORE-04C Frozen Plan 构建 | Planned；仅消费 Build-Ready Frozen Plan 生成 GLB、Scene Package、3D Tiles。 |
 | 并行 | CAD-DXF-01 | 真实匿名 DXF、重复性、取消与实体覆盖完成支持闸门。 |
 | 并行 | CAD-DWG-01 | DWG Adapter 和受控转换的许可、Xref、代理对象、取消、超时与真实样本闸门完成。 |
 | 7 | DESKTOP-00 | 分别验证二维 CAD、GLB WebView、3D Tiles WebView，失败有受控回退。 |

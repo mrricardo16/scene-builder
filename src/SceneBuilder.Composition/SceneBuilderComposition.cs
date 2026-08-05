@@ -29,7 +29,14 @@ public static class SceneBuilderComposition
         outputRootPolicy,
         snapshotFactory: new CadBuildInputSnapshotFactory(),
         snapshotSerializer: new CadBuildInputSnapshotSerializer());
-        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, new ConversionPlanService(outputRootPolicy), new BuildFrozenPlanHandler(outputRootPolicy));
+        var ruleSetSnapshotter = new ConversionPlanRuleSetSnapshotter();
+        var defaultProfile = new ConversionPlanDefaultProfileV2(ruleSetSnapshotter);
+        var configurationResolver = new FrozenBuildConfigurationResolver();
+        var frozenSerializer = new FrozenPlanV2Serializer();
+        var readinessValidator = new FrozenPlanBuildReadinessValidator(ruleSetSnapshotter);
+        var assetImporter = new PlanAssetResourceImporter(outputRootPolicy);
+        var planService = new ConversionPlanService(outputRootPolicy, ruleSetSnapshotter, defaultProfile, configurationResolver, readinessValidator, frozenSerializer);
+        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, planService, new BuildFrozenPlanHandler(outputRootPolicy, frozenSerializer, readinessValidator), readinessValidator, frozenSerializer, ruleSetSnapshotter, assetImporter, configurationResolver);
     }
 
     private static ISceneCapabilityRegistry CreateCapabilityRegistry() => new SceneCapabilityRegistry(
@@ -44,6 +51,7 @@ public static class SceneBuilderComposition
         new SceneCapability { Code = "PLAN_CREATE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "PLAN_VALIDATE", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "PLAN_FREEZE", State = SceneCapabilityState.Available },
+        new SceneCapability { Code = "BUILD_READY_FROZEN_PLAN", State = SceneCapabilityState.Available },
         new SceneCapability { Code = "BUILD_GLB", State = SceneCapabilityState.Planned },
         new SceneCapability { Code = "BUILD_SCENE_PACKAGE", State = SceneCapabilityState.Planned },
         new SceneCapability { Code = "BUILD_3D_TILES", State = SceneCapabilityState.Planned },

@@ -31,3 +31,9 @@ dotnet test SceneBuilder.sln
 # CORE-03 editable conversion plan
 
 `scene-builder plan create --analysis <analysis-json> --output <output-root>`, `plan validate --plan <plan-draft-json> --output <output-root>`, and `plan freeze --plan <plan-draft-json> --output <output-root>` publish independent plan revisions, validation and frozen-plan artifacts. They only configure future Build work; they do not generate a scene, GLB, package, or tileset.
+
+# CORE-04B Build-ready Frozen Plan
+
+Analysis v2 with an Available Build Input Snapshot creates Draft v2. Validation v2 binds the Analysis id/fingerprint, Snapshot id/content hash, complete input interpretation, repair selection, embedded RuleSet snapshot, explicit asset catalog/bindings, output, partition, and Tiles configuration. Freeze publishes `plans/frozen/revision-000N.json` only after strict read-back and Readiness validation.
+
+`BUILD_READY_FROZEN_PLAN` is Available as a data-readiness capability. `BUILD`, `BUILD_GLB`, `BUILD_SCENE_PACKAGE`, and `BUILD_3D_TILES` remain Planned. Frozen Plan v1 remains readable but always returns `FROZEN_PLAN_NOT_BUILD_READY`; no generator, Blender process, SceneDraft, Scene Package, or Tiles call is made by CORE-04B.
