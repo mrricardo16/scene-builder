@@ -67,7 +67,7 @@ public sealed class BlenderSceneGenerator : IBlenderSceneGenerator
                 return CreateResult(BlenderGenerationStatus.Failed, null, 0, mapping, [Diagnostic("BLENDER_OUTPUT_EXISTS", DiagnosticSeverity.Error)]);
             }
 
-            workDirectory = Path.Combine(request.OutputDirectory, ".scene-builder-staging", Guid.NewGuid().ToString("N"));
+            workDirectory = Path.Combine(Path.GetTempPath(), "scene-builder-blender", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workDirectory);
             if (request.AssetGeneration is not null)
             {

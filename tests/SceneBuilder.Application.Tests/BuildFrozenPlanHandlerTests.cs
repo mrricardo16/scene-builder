@@ -154,6 +154,65 @@ public sealed class BuildFrozenPlanHandlerTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithMissingBlenderExecutable_ReturnsNotConfiguredWithoutModelArtifacts()
+    {
+        var outputRoot = Path.Combine(Path.GetTempPath(), "scene-builder-build-tests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var host = SceneBuilderComposition.CreateDefault(new MissingBlenderGenerator());
+            var frozenPath = await CreateFrozenPlanAsync(host, outputRoot, allOutputs: true);
+            var missingPath = Path.Combine(outputRoot, "missing", "blender.exe");
+
+            var result = await host.BuildFrozenPlanHandler!.ExecuteAsync(new BuildFrozenPlanRequest
+            {
+                FrozenPlanPath = frozenPath,
+                OutputRootDirectory = outputRoot,
+                BlenderExecutablePath = missingPath
+            }, null, CancellationToken.None);
+
+            Assert.Equal(SceneOperationStatus.NotConfigured, result.Status);
+            Assert.Contains(result.Outputs, output => output.Kind == SceneBuildOutputKind.SingleGlb && output.Status == SceneBuildOutputStatus.NotConfigured);
+            Assert.Contains(result.Outputs, output => output.Kind == SceneBuildOutputKind.ScenePackage && output.Status == SceneBuildOutputStatus.NotConfigured);
+            Assert.Contains(result.Outputs, output => output.Kind == SceneBuildOutputKind.ThreeDTiles && output.Status == SceneBuildOutputStatus.NotConfigured);
+            Assert.Empty(Directory.EnumerateFiles(outputRoot, "*.glb", SearchOption.AllDirectories));
+            Assert.False(Directory.Exists(Path.Combine(outputRoot, "builds", "build-0001", "scene-package")));
+        }
+        finally
+        {
+            if (Directory.Exists(outputRoot)) Directory.Delete(outputRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithBlenderTimeout_SkipsDownstreamOutputs()
+    {
+        var outputRoot = Path.Combine(Path.GetTempPath(), "scene-builder-build-tests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var host = SceneBuilderComposition.CreateDefault(new TimeoutBlenderGenerator());
+            var frozenPath = await CreateFrozenPlanAsync(host, outputRoot, allOutputs: true);
+
+            var result = await host.BuildFrozenPlanHandler!.ExecuteAsync(new BuildFrozenPlanRequest
+            {
+                FrozenPlanPath = frozenPath,
+                OutputRootDirectory = outputRoot,
+                BlenderExecutablePath = "test-blender.exe"
+            }, null, CancellationToken.None);
+
+            Assert.Equal(SceneOperationStatus.Failed, result.Status);
+            Assert.Contains(result.Outputs, output => output.Kind == SceneBuildOutputKind.SingleGlb && output.Status == SceneBuildOutputStatus.Failed && output.Diagnostics.Any(item => item.Code == "BLENDER_PROCESS_TIMED_OUT"));
+            Assert.Contains(result.Outputs, output => output.Kind == SceneBuildOutputKind.ScenePackage && output.Status == SceneBuildOutputStatus.SkippedDependencyFailed);
+            Assert.Contains(result.Outputs, output => output.Kind == SceneBuildOutputKind.ThreeDTiles && output.Status == SceneBuildOutputStatus.SkippedDependencyFailed);
+            Assert.Empty(Directory.EnumerateFiles(outputRoot, "*.glb", SearchOption.AllDirectories));
+            Assert.False(Directory.Exists(Path.Combine(outputRoot, "builds", "build-0001", "scene-package")));
+        }
+        finally
+        {
+            if (Directory.Exists(outputRoot)) Directory.Delete(outputRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithLegacyFrozenPlan_RejectsBuildReadiness()
     {
         var outputRoot = Path.Combine(Path.GetTempPath(), "scene-builder-build-tests", Guid.NewGuid().ToString("N"));
@@ -255,6 +314,26 @@ public sealed class BuildFrozenPlanHandlerTests
             await File.WriteAllBytesAsync(path, CreateMinimalGlb(), cancellationToken);
             return new BlenderGenerationResult { Status = BlenderGenerationStatus.Succeeded, ArtifactPath = path, GeneratedObjectCount = request.Draft.Nodes.Count };
         }
+    }
+
+    private sealed class MissingBlenderGenerator : IBlenderSceneGenerator
+    {
+        public Task<BlenderGenerationResult> GenerateAsync(BlenderGenerationRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(new BlenderGenerationResult
+            {
+                Status = BlenderGenerationStatus.Failed,
+                Diagnostics = [new SceneDiagnostic { Code = "BLENDER_EXECUTABLE_NOT_FOUND", Severity = DiagnosticSeverity.Error }]
+            });
+    }
+
+    private sealed class TimeoutBlenderGenerator : IBlenderSceneGenerator
+    {
+        public Task<BlenderGenerationResult> GenerateAsync(BlenderGenerationRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(new BlenderGenerationResult
+            {
+                Status = BlenderGenerationStatus.TimedOut,
+                Diagnostics = [new SceneDiagnostic { Code = "BLENDER_PROCESS_TIMED_OUT", Severity = DiagnosticSeverity.Error }]
+            });
     }
 
     private static byte[] CreateMinimalGlb()

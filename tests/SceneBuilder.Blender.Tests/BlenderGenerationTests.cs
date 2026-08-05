@@ -46,6 +46,28 @@ public sealed class BlenderGenerationTests
     }
 
     [Fact]
+    public async Task Generate_uses_short_external_staging_for_deep_output_paths()
+    {
+        var testRoot = CreateTemporaryDirectory();
+        var outputDirectory = Path.Combine(testRoot, new string('x', 120), "builds", ".staging-build-0001", ".scene-package.staging", "partitions", ".scene-builder-staging", "partition");
+        Directory.CreateDirectory(outputDirectory);
+        var runner = new RecordingGlbWritingRunner();
+        try
+        {
+            var result = await new BlenderSceneGenerator(runner).GenerateAsync(Request(outputDirectory), CancellationToken.None);
+
+            Assert.Equal(BlenderGenerationStatus.Succeeded, result.Status);
+            Assert.True(File.Exists(Assert.IsType<string>(result.ArtifactPath)));
+            Assert.False(runner.WorkingDirectory.StartsWith(outputDirectory, StringComparison.OrdinalIgnoreCase));
+            Assert.False(runner.Arguments[^1].StartsWith(outputDirectory, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Command_builder_uses_argument_list_without_shell_and_rejects_unsafe_output_names()
     {
         var command = BlenderCommandBuilder.Create("C:\\tool path\\blender.exe", "C:\\script path\\generate_scene.py", "C:\\manifest path\\manifest.json", "C:\\output path\\scene.glb", "C:\\work path", TimeSpan.FromSeconds(1), 100);
@@ -137,6 +159,20 @@ public sealed class BlenderGenerationTests
         {
             WriteMinimalGlb(request.Arguments[^1]);
             return Task.FromResult(new BlenderProcessResult { Status = BlenderProcessStatus.Succeeded, ExitCode = 0, StandardOutput = standardOutput });
+        }
+    }
+
+    private sealed class RecordingGlbWritingRunner : IBlenderProcessRunner
+    {
+        public string WorkingDirectory { get; private set; } = string.Empty;
+        public IReadOnlyList<string> Arguments { get; private set; } = Array.Empty<string>();
+
+        public Task<BlenderProcessResult> RunAsync(BlenderProcessRequest request, CancellationToken cancellationToken)
+        {
+            WorkingDirectory = request.WorkingDirectory;
+            Arguments = request.Arguments;
+            WriteMinimalGlb(request.Arguments[^1]);
+            return Task.FromResult(new BlenderProcessResult { Status = BlenderProcessStatus.Succeeded, ExitCode = 0, StandardOutput = "SCENEBUILDER_STATUS:SUCCEEDED" });
         }
     }
 }

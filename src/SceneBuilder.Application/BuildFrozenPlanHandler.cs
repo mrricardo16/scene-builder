@@ -113,6 +113,22 @@ public sealed class BuildFrozenPlanHandler : ISceneOperationHandler<BuildFrozenP
             var generated = await _blender!.GenerateAsync(new BlenderGenerationRequest { Draft = draftResult.Draft, Tool = tool, OutputDirectory = singleDirectory, OutputFileName = "scene.glb", AssetGeneration = assets }, cancellationToken);
             var status = Map(generated.Status);
             var relative = status is SceneBuildOutputStatus.Succeeded or SceneBuildOutputStatus.PartiallySucceeded ? allocation.Relative("single-glb/scene.glb") : null;
+            if (generated.Diagnostics.Any(item => item.Code is "BLENDER_EXECUTABLE_NOT_FOUND" or "BLENDER_SCRIPT_UNAVAILABLE"))
+            {
+                var diagnostic = Diagnostic("BUILD_BLENDER_NOT_CONFIGURED", DiagnosticSeverity.Error);
+                outputs.Add(Output(SceneBuildOutputKind.SingleGlb, SceneBuildOutputStatus.NotConfigured, diagnostics: generated.Diagnostics.Append(diagnostic).ToArray()));
+                foreach (var kind in RequestedKinds(configuration.Outputs).Where(kind => kind is not SceneBuildOutputKind.SingleGlb)) outputs.Add(Output(kind, SceneBuildOutputStatus.NotConfigured, diagnostics: [diagnostic]));
+                AddNotRequestedOutputs(outputs, configuration.Outputs);
+                return await PublishResultAsync(SceneOperationStatus.NotConfigured, plan, snapshot, request, allocation, outputs, artifacts, [diagnostic], cancellationToken);
+            }
+            if (generated.Status is BlenderGenerationStatus.TimedOut or BlenderGenerationStatus.Cancelled)
+            {
+                outputs.Add(Output(SceneBuildOutputKind.SingleGlb, status, relative, generated.Diagnostics));
+                foreach (var kind in RequestedKinds(configuration.Outputs).Where(kind => kind is not SceneBuildOutputKind.SingleGlb)) outputs.Add(Output(kind, SceneBuildOutputStatus.SkippedDependencyFailed, diagnostics: generated.Diagnostics));
+                AddNotRequestedOutputs(outputs, configuration.Outputs);
+                var terminalStatus = generated.Status is BlenderGenerationStatus.Cancelled ? SceneOperationStatus.Cancelled : SceneOperationStatus.Failed;
+                return await PublishResultAsync(terminalStatus, plan, snapshot, request, allocation, outputs, artifacts, generated.Diagnostics, cancellationToken);
+            }
             outputs.Add(Output(SceneBuildOutputKind.SingleGlb, status, relative, generated.Diagnostics));
             if (relative is not null) artifacts.Add(Artifact(SceneArtifactKind.Glb, relative));
         }
