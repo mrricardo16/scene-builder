@@ -36,5 +36,11 @@ public sealed class SceneBuilderCompositionTests
         ],
         host.CapabilityRegistry.GetCapabilities().Select(item => item.Code));
         Assert.False(Directory.Exists(temporaryOutput));
+        var capabilities = host.CapabilityRegistry.GetCapabilities().ToDictionary(item => item.Code, StringComparer.Ordinal);
+        Assert.Equal(SceneCapabilityState.Available, capabilities["BUILD_READY_FROZEN_PLAN"].State);
+        Assert.Equal(SceneCapabilityState.Planned, capabilities["BUILD"].State);
+        Assert.Equal(SceneCapabilityState.Planned, capabilities["BUILD_GLB"].State);
+        Assert.Equal(SceneCapabilityState.Planned, capabilities["BUILD_SCENE_PACKAGE"].State);
+        Assert.Equal(SceneCapabilityState.Planned, capabilities["BUILD_3D_TILES"].State);
     }
 }

@@ -37,3 +37,6 @@ dotnet test SceneBuilder.sln
 Analysis v2 with an Available Build Input Snapshot creates Draft v2. Validation v2 binds the Analysis id/fingerprint, Snapshot id/content hash, complete input interpretation, repair selection, embedded RuleSet snapshot, explicit asset catalog/bindings, output, partition, and Tiles configuration. Freeze publishes `plans/frozen/revision-000N.json` only after strict read-back and Readiness validation.
 
 `BUILD_READY_FROZEN_PLAN` is Available as a data-readiness capability. `BUILD`, `BUILD_GLB`, `BUILD_SCENE_PACKAGE`, and `BUILD_3D_TILES` remain Planned. Frozen Plan v1 remains readable but always returns `FROZEN_PLAN_NOT_BUILD_READY`; no generator, Blender process, SceneDraft, Scene Package, or Tiles call is made by CORE-04B.
+# CORE-04C Build implementation note
+
+The local `scene-builder build` command now consumes only a build-ready Frozen Plan v2 and its validated Snapshot. It publishes isolated `builds/build-000N` jobs with SceneDraft, optional Single GLB, optional Scene Package, and optional local Cartesian 3D Tiles outputs. The command does not reparse CAD or invoke Analyze. `BUILD`, `BUILD_GLB`, `BUILD_SCENE_PACKAGE`, and `BUILD_3D_TILES` remain Planned until a real Blender SmokeTest is available; this machine currently reports Blender as NotConfigured.

@@ -10,6 +10,9 @@
     <ProjectReference Include="..\SceneBuilder.Application\SceneBuilder.Application.csproj" />
     <ProjectReference Include="..\SceneBuilder.Cad\SceneBuilder.Cad.csproj" />
     <ProjectReference Include="..\SceneBuilder.Infrastructure\SceneBuilder.Infrastructure.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Blender\SceneBuilder.Blender.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Pipeline\SceneBuilder.Pipeline.csproj" />
+    <ProjectReference Include="..\SceneBuilder.Tiles\SceneBuilder.Tiles.csproj" />
   </ItemGroup>
 
 </Project>

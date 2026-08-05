@@ -119,3 +119,6 @@ IDTS、Cesium 和 Three.js 只是后续候选集成端；它们的版本、运�
 `LARGE-00` 至 `LARGE-04` 是大型厂区路线：样本与基线、HLOD/多层 tileset、GLB 优化、增量/缓存、Viewer 验收。它们位于 CORE-04 与 DESKTOP 输出/预览工作之后，并行依赖 CAD-DXF-01、CAD-DWG-01 的真实输入支持证据。CORE-01 仍是下一项生产代码实施任务。
 
 状态升级规则：当前 Root + Leaves 只能保持“Validated 基础 Tileset”；完成 LARGE-00 的真实样本与基准后才可称“已验证大厂区基础负载”；完成 LARGE-01、02 和受控 Viewer 验收后才可评估“大厂区可用”；只有大样本、性能、内存、稳定性、取消、隐私和 Viewer 全部达标后，才可提出 Production Ready 结论。CORE-04B 的 Build Readiness 只冻结未来构建所需语义，不改变以上 Tiles/HLOD 验收门槛。
+# CORE-04C 边界记录
+
+本次 Build 只实现并验证现有 local Cartesian、meters、z-up、root + direct GLB partition leaves 的 Tiles 生成链；不实现 HLOD、多层 LOD、压缩、缓存、Viewer、WGS84/ECEF 或 IDTS 集成。该链路不改变 LARGE-00 至 LARGE-04 的验收门槛，也不能把小样本替代为大厂区生产验收。

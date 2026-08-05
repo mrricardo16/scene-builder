@@ -24,3 +24,6 @@ CORE-04A 仅保存标准化 CAD 几何、轮廓、修复候选、重分类事实
 ## 验证与退出
 
 验证每种输出均可选择、产物隔离、取消可收敛、失败不伪造成功。退出时 Desktop 可安全接入生成，但预览仍须分别完成 DESKTOP-00、07、08。
+# CORE-04C 实现记录（2026-08-05）
+
+Frozen Plan v2 的 Build 后端已在本地工作区接通 Snapshot→SceneDraft→可选 GLB/Scene Package/Tiles，包含 Job 隔离和相对 Artifact 报告；旧 Frozen Plan v1 仍拒绝执行。真实 Blender SmokeTest 缺失，因此不升级 BUILD 能力状态。

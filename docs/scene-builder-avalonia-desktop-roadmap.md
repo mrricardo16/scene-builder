@@ -62,3 +62,6 @@ flowchart LR
 # CORE-03 可供桌面端消费的计划服务
 
 Avalonia 后续调用同一 `IConversionPlanService` 创建、保存、验证和冻结 Draft，不需要直接复用 CLI 参数或自行复制验证逻辑。
+# CORE-04C 对 Desktop 的复用边界
+
+Desktop 后续只需调用现有 Build Handler 并展示 Job/输出状态；不在 Avalonia 层实现 CAD 重解析、规则分类、Repair、资产猜测或 Tiles 生成。当前文档仍是路线图，未引入 Avalonia 生产代码。

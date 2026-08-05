@@ -45,3 +45,6 @@ Planned 不是运行时操作结果。当前 `capabilities` 仅报告状态，�
 Analysis v2 + Snapshot Available 时，`plan create` 返回 `contractVersion: "2.0"`。`plan validate` 的 JSON 摘要包含 SnapshotId/ContentHash；`plan freeze` 的 JSON 摘要包含 `planContractVersion`、`snapshotId`、`snapshotContentHash`、`buildReadiness` 和 Frozen Plan 相对 Artifact 路径。输出不包含绝对路径、原始规则正文、资产原始路径或 Snapshot 正文。
 
 `buildReadiness: "ready"` 仅表示 CORE-04B 的冻结输入已通过校验；CLI 不因此增加 `scene-builder build`，也不启动任何三维生成器。
+# CORE-04C Build CLI 补充
+
+`scene-builder build --plan <frozen-plan-json> --output <directory> [--blender-path <file>] [--timeout-seconds <seconds>] [--format text|json]` 只允许运行环境参数，不能覆盖 Frozen Plan 中的语义配置。`text/json` 输出只包含 JobId、ContentId、相对 Artifact 路径、每个输出状态和稳定诊断码；Blender 未配置返回退出码 4，生成失败返回退出码 5，取消返回退出码 3。

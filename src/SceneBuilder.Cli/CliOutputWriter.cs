@@ -14,6 +14,7 @@ public static class CliOutputWriter
           scene-builder capabilities [--format text|json]
           scene-builder analyze --input <file> --output <directory> [--rules <file>] [--unit <meters|millimeters|centimeters>] [--format text|json]
           scene-builder plan <create|validate|freeze> --analysis|--plan <file> --output <directory> [--format text|json]
+          scene-builder build --plan <file> --output <directory> [--blender-path <file>] [--timeout-seconds <seconds>] [--format text|json]
           scene-builder help
         """;
 
@@ -91,6 +92,11 @@ public static class CliOutputWriter
     ["Scene Builder Conversion Plan", $"Operation: {operation}", $"Plan: {planId}", $"Revision: {revision}", $"Status: {status}", $"Diagnostics: {diagnostics.Count}", $"Artifact: {artifacts.FirstOrDefault()?.RelativePath ?? "None"}"]);
 
     public static string SerializePlanJson(object result) => JsonSerializer.Serialize(result, JsonOptions);
+
+    public static string SerializeBuildJson(SceneBuildResult result) => JsonSerializer.Serialize(result, JsonOptions);
+
+    public static string FormatBuildText(SceneBuildResult result) => string.Join(Environment.NewLine,
+        ["Scene Builder frozen plan build", $"Status: {result.Status}", $"Job: {result.BuildJobId}", $"Content: {result.BuildContentId}", $"Artifacts: {result.Artifacts.Count}", $"Diagnostics: {result.Diagnostics.Count}", .. result.Outputs.Select(output => $"Output: {output.Kind}={output.Status}{(output.ArtifactRelativePath is null ? string.Empty : $" ({output.ArtifactRelativePath})")}")]);
 
     private static string GetDisplayName(string toolName) => toolName switch
     {

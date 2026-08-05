@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace SceneBuilder.Domain;
 
 public enum CadWallGeometryKind
@@ -12,6 +14,13 @@ public enum CadRoadGeometryKind
     Centerline = 1
 }
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(CadWallObject), "wall")]
+[JsonDerivedType(typeof(CadFloorObject), "floor")]
+[JsonDerivedType(typeof(CadColumnObject), "column")]
+[JsonDerivedType(typeof(CadRoadObject), "road")]
+[JsonDerivedType(typeof(CadStaticFacilityObject), "static-facility")]
+[JsonDerivedType(typeof(CadDynamicEquipmentObject), "dynamic-equipment")]
 public abstract record CadSemanticObject
 {
     protected CadSemanticObject(

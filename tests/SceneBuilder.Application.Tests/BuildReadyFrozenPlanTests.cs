@@ -85,7 +85,7 @@ public sealed class BuildReadyFrozenPlanTests
     }
 
     [Fact]
-    public async Task BuildHandler_StopsAtReadiness_AndDoesNotRunGenerators()
+    public async Task BuildHandler_RechecksReadiness_AndReportsBlenderNotConfigured()
     {
         var outputRoot = Path.Combine(Path.GetTempPath(), "scene-builder-core-04b-tests", Guid.NewGuid().ToString("N"));
         try
@@ -97,8 +97,9 @@ public sealed class BuildReadyFrozenPlanTests
                 progress: null,
                 CancellationToken.None);
 
-            Assert.Equal(SceneOperationStatus.Failed, result.Status);
-            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "BUILD_NOT_IMPLEMENTED");
+            Assert.Equal(SceneOperationStatus.NotConfigured, result.Status);
+            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "BUILD_BLENDER_NOT_CONFIGURED");
+            Assert.Equal("build-0001", result.BuildJobId);
             Assert.Empty(Directory.EnumerateFiles(outputRoot, "*.glb", SearchOption.AllDirectories));
         }
         finally

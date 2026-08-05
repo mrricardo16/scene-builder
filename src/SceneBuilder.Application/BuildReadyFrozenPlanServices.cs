@@ -312,7 +312,7 @@ public sealed class FrozenPlanBuildReadinessValidator(ConversionPlanRuleSetSnaps
             (output.GenerateSingleGlb || output.PublishScenePackageArtifact || output.Generate3DTiles) &&
             output.PrimaryOutput is "singleGlb" or "scenePackage" or "threeDTiles" &&
             ((output.PrimaryOutput == "singleGlb" && output.GenerateSingleGlb) || (output.PrimaryOutput == "scenePackage" && output.PublishScenePackageArtifact) || (output.PrimaryOutput == "threeDTiles" && output.Generate3DTiles)) &&
-            (!output.Generate3DTiles || output.GenerateScenePackageAsDependency) &&
+            (!output.Generate3DTiles || output.PublishScenePackageArtifact || output.GenerateScenePackageAsDependency) &&
             partition is not null && double.IsFinite(partition.CellSizeMeters) && partition.CellSizeMeters > 0 &&
             double.IsFinite(partition.OriginXMeters) && double.IsFinite(partition.OriginYMeters) && partition.MaximumIntersectedCellsPerObject > 0 &&
             Enum.IsDefined(partition.LargeObjectBehavior) && Enum.IsDefined(partition.InvalidBoundsBehavior) &&

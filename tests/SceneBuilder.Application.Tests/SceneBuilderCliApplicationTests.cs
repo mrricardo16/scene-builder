@@ -8,6 +8,17 @@ namespace SceneBuilder.Application.Tests;
 public sealed class SceneBuilderCliApplicationTests
 {
     [Fact]
+    public void Parser_build_accepts_only_frozen_plan_and_runtime_options()
+    {
+        var command = CliCommandParser.Parse(["build", "--plan", "frozen.json", "--output", "out", "--blender-path", "blender.exe", "--timeout-seconds", "30", "--format", "json"]);
+
+        Assert.Equal(CliCommandKind.Build, command.Kind);
+        Assert.Equal(TimeSpan.FromSeconds(30), command.Build!.Request.BlenderTimeout);
+        Assert.EndsWith("frozen.json", command.Build.Request.FrozenPlanPath, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(CliOutputFormat.Json, command.OutputFormat);
+    }
+
+    [Fact]
     public async Task RunAsync_writes_stable_help_for_help_forms()
     {
         var first = await RunAsync(["help"]);

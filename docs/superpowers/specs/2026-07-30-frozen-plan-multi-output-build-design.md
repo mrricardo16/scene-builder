@@ -27,3 +27,32 @@ Build Snapshot -> SceneDraftBuilder
 ## CLI、Capabilities 与非目标
 
 `build --plan <frozen-plan-json> --output <root> [--blender-path] [--timeout-seconds] [--format text|json]` 只提供运行环境，不能覆盖 Frozen Plan。`BUILD`、`BUILD_GLB`、`BUILD_SCENE_PACKAGE`、`BUILD_3D_TILES` 表示产品调度已实现，不表示 Blender 已配置或大厂区性能已验收。Avalonia 调用同一 Build handler。非目标是 Avalonia、DWG、DXF parser/repair/rules重写、HLOD/LOD、多层 Tiles、优化、缓存、Viewer 和大厂区验收。
+# CORE-04C 实现补充
+
+当前工作区已实现本地 Build 编排，但能力注册仍保持 `BUILD`、`BUILD_GLB`、`BUILD_SCENE_PACKAGE`、`BUILD_3D_TILES` 为 Planned：本机 `doctor` 尚未发现 Blender，未满足真实 SmokeTest 后再升级能力的门槛。代码路径可以在测试替身下验证，不能据此宣称生产可用。
+
+### 映射与变换顺序
+
+Build 只读取冻结计划和 Snapshot，不调用 CAD Adapter、DXF 解析或 Analyze。Snapshot 已是米制、分析局部原点坐标；冻结输入解释按以下固定顺序应用到所有几何、轮廓、Repair 点、INSERT 位置和资产候选位置：
+
+```text
+分析局部米制坐标
+  → ExplicitOffset 时减去 Frozen LocalOrigin，否则保持分析原点
+  → 绕 Z 轴按 Frozen YawDegrees 旋转
+  → 加上 Frozen ZOffsetMeters
+  → SceneDraft / GLB / Scene Package / Tiles
+```
+
+INSERT 的旋转同时加上 Yaw 并归一化到 `[0, 360)`；Repair 仍通过现有 `CadGeometryRepairApplier`，其 `CanApply`、当前几何匹配和轮廓校验决定应用或跳过，Build 不静默替换失败动作。
+
+### 作业、状态与验证
+
+每次执行通过 claim 文件分配新的 `build-000N`，先在 `.staging-*` 目录写入并验证结果，再一次性移动为 `builds/build-000N`。BuildContentId 只由冻结计划、Snapshot、规则/资产哈希、生成器契约版本和 Blender 文件版本组成，不包含绝对路径、时间、机器名、随机数或 JobId。单体 GLB、Scene Package、Tiles 分别保留状态；Tiles 只消费同一次执行生成的 Scene Package，Package 失败时 Tiles 为 `SkippedDependencyFailed`。取消或失败不会发布未验证的 GLB/Tiles。
+
+CLI 新增：
+
+```text
+scene-builder build --plan <frozen-plan-json> --output <root> [--blender-path <file>] [--timeout-seconds <seconds>] [--format text|json]
+```
+
+真实 SmokeTest 前的验收证据为：全量 build/test、Frozen Plan Readiness 复检、生成器调用替身测试、job 隔离/路径安全/取消与 NotConfigured 测试，以及 `scene-builder doctor` 的当前环境报告。

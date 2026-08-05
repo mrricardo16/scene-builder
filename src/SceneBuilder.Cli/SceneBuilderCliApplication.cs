@@ -33,6 +33,7 @@ public sealed class SceneBuilderCliApplication(
                 CliCommandKind.Doctor => await RunDoctorAsync(command.Doctor!, cancellationToken),
                 CliCommandKind.Analyze => await RunAnalyzeAsync(command.Analyze!, command.OutputFormat, cancellationToken),
                 CliCommandKind.Plan => await RunPlanAsync(command.Plan!, command.OutputFormat, cancellationToken),
+                CliCommandKind.Build => await RunBuildAsync(command.Build!, command.OutputFormat, cancellationToken),
                 _ => throw new InvalidOperationException("The CLI command kind is not supported.")
             };
         }
@@ -51,6 +52,17 @@ public sealed class SceneBuilderCliApplication(
             await _standardError.WriteLineAsync("Scene Builder command failed.");
             return (int)CliExitCode.Failed;
         }
+    }
+
+    private async Task<int> RunBuildAsync(BuildCommand command, CliOutputFormat format, CancellationToken cancellationToken)
+    {
+        var handler = _host.BuildFrozenPlanHandler ?? throw new InvalidOperationException("Frozen plan build is not configured.");
+        var result = await handler.ExecuteAsync(command.Request, null, cancellationToken);
+        var output = format is CliOutputFormat.Json
+            ? CliOutputWriter.SerializeBuildJson(result)
+            : CliOutputWriter.FormatBuildText(result);
+        await _standardOutput.WriteLineAsync(output);
+        return Exit(result.Status);
     }
 
     private async Task<int> WriteHelpAsync()
@@ -154,7 +166,7 @@ public sealed class SceneBuilderCliApplication(
     {
         SceneOperationStatus.Succeeded or SceneOperationStatus.PartiallySucceeded => (int)CliExitCode.Success,
         SceneOperationStatus.Cancelled => (int)CliExitCode.Cancelled,
-        SceneOperationStatus.Unsupported => (int)CliExitCode.CapabilityUnavailable,
+        SceneOperationStatus.NotConfigured or SceneOperationStatus.Unsupported => (int)CliExitCode.CapabilityUnavailable,
         _ => (int)CliExitCode.Failed
     };
 }

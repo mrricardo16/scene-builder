@@ -15,3 +15,6 @@
 ## 验证与退出
 
 对 Small、Medium、Large 与 Stress/Boundary 样本执行验收；性能与内存必须同时满足已确认预算。退出时可声明受控 Viewer 对明确样本范围已验证，不能外推为通用 Viewer 或 IDTS 接入。
+# CORE-04C 依赖说明
+
+CORE-04C 不提供 Viewer 或大场景验收；LARGE-04 仍需独立完成加载、定位、资源释放和性能证据。

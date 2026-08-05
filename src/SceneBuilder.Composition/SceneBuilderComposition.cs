@@ -2,6 +2,7 @@ using SceneBuilder.Application;
 using SceneBuilder.Application.Doctor;
 using SceneBuilder.Cad;
 using SceneBuilder.Infrastructure.Doctor;
+using SceneBuilder.Blender;
 
 namespace SceneBuilder.Composition;
 
@@ -9,7 +10,7 @@ public static class SceneBuilderComposition
 {
     private static readonly TimeSpan ExecutableVersionTimeout = TimeSpan.FromSeconds(10);
 
-    public static SceneBuilderHost CreateDefault()
+    public static SceneBuilderHost CreateDefault(IBlenderSceneGenerator? blenderSceneGenerator = null)
     {
         var fileSystem = new SystemFileSystem();
         var versionReader = new ProcessExecutableVersionReader(ExecutableVersionTimeout);
@@ -36,7 +37,10 @@ public static class SceneBuilderComposition
         var readinessValidator = new FrozenPlanBuildReadinessValidator(ruleSetSnapshotter);
         var assetImporter = new PlanAssetResourceImporter(outputRootPolicy);
         var planService = new ConversionPlanService(outputRootPolicy, ruleSetSnapshotter, defaultProfile, configurationResolver, readinessValidator, frozenSerializer);
-        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, planService, new BuildFrozenPlanHandler(outputRootPolicy, frozenSerializer, readinessValidator), readinessValidator, frozenSerializer, ruleSetSnapshotter, assetImporter, configurationResolver);
+        var blender = blenderSceneGenerator ?? new BlenderSceneGenerator();
+        var package = new ScenePackageBuildGeneratorAdapter(blender);
+        var tiles = new TilesetBuildGeneratorAdapter();
+        return new SceneBuilderHost(doctorService, CreateCapabilityRegistry(), outputRootPolicy, analyzeHandler, planService, new BuildFrozenPlanHandler(outputRootPolicy, frozenSerializer, readinessValidator, blender: blender, packageGenerator: package, tilesetGenerator: tiles), readinessValidator, frozenSerializer, ruleSetSnapshotter, assetImporter, configurationResolver);
     }
 
     private static ISceneCapabilityRegistry CreateCapabilityRegistry() => new SceneCapabilityRegistry(

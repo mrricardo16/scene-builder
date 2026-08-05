@@ -11,7 +11,8 @@ public enum CliCommandKind
     Capabilities = 2,
     Analyze = 3,
     Plan = 4,
-    Invalid = 5
+    Invalid = 5,
+    Build = 6
 }
 
 public enum CliOutputFormat
@@ -38,6 +39,8 @@ public sealed record CliCommand
     public AnalyzeCommand? Analyze { get; init; }
 
     public PlanCommand? Plan { get; init; }
+
+    public BuildCommand? Build { get; init; }
 
     public CliOutputFormat OutputFormat { get; init; } = CliOutputFormat.Text;
 
@@ -69,12 +72,44 @@ public static class CliCommandParser
             return ParsePlan(args[1..]);
         }
 
+        if (string.Equals(args[0], "build", StringComparison.OrdinalIgnoreCase))
+        {
+            return ParseBuild(args[1..]);
+        }
+
         return args[0] switch
         {
             "help" or "--help" when args.Length == 1 => new CliCommand { Kind = CliCommandKind.Help },
             "capabilities" => ParseCapabilities(args[1..]),
             _ => Invalid($"Unknown command: {args[0]}")
         };
+    }
+
+    private static CliCommand ParseBuild(string[] args)
+    {
+        string? plan = null;
+        string? output = null;
+        string? blender = null;
+        TimeSpan? timeout = null;
+        var format = CliOutputFormat.Text;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var option = args[index];
+            if (index == args.Length - 1 || string.IsNullOrWhiteSpace(args[index + 1])) return Invalid($"Option {option} requires a non-empty value.");
+            var value = args[++index];
+            switch (option)
+            {
+                case "--plan" when plan is null: plan = value; break;
+                case "--output" when output is null: output = value; break;
+                case "--blender-path" when blender is null: blender = value; break;
+                case "--timeout-seconds" when timeout is null && double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds) && double.IsFinite(seconds) && seconds > 0: timeout = TimeSpan.FromSeconds(seconds); break;
+                case "--format" when value == "text": format = CliOutputFormat.Text; break;
+                case "--format" when value == "json": format = CliOutputFormat.Json; break;
+                default: return Invalid($"Unknown, duplicate, or invalid option: {option}");
+            }
+        }
+        if (plan is null || output is null) return Invalid("Usage: scene-builder build --plan <file> --output <directory> [--blender-path <file>] [--timeout-seconds <seconds>] [--format text|json]");
+        return new CliCommand { Kind = CliCommandKind.Build, OutputFormat = format, Build = new BuildCommand(new BuildFrozenPlanRequest { FrozenPlanPath = Path.GetFullPath(plan), OutputRootDirectory = Path.GetFullPath(output), BlenderExecutablePath = blender is null ? null : Path.GetFullPath(blender), BlenderTimeout = timeout }) };
     }
 
     private static CliCommand ParsePlan(string[] args)
